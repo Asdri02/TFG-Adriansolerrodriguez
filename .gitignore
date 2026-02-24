@@ -1,0 +1,16 @@
+# Entorno virtual
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# VSCode
+.vscode/
+
+# Datos de pruebas (si no quieres subirlos)
+data/input/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
