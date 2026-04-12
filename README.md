@@ -1,27 +1,95 @@
-TFG - Corrector Inteligente de Exámenes
+# TFG - Sistema Inteligente de Corrección de Exámenes
 
-Este proyecto tiene como objetivo desarrollar un sistema basado en Inteligencia Artificial capaz de corregir automáticamente exámenes a partir de imágenes digitales.
+Este proyecto desarrolla un sistema de evaluación automática capaz de corregir exámenes a partir de imágenes digitales.
 
-Estructura del Proyecto
+A diferencia de enfoques basados en aprendizaje automático, el sistema implementa un enfoque híbrido que combina OCR, procesamiento de texto y evaluación semántica basada en conceptos clave.
 
-src/ → Núcleo del sistema y pipeline de procesamiento
+---
 
-data/ → Imágenes de entrada y plantillas de examen
+## Funcionalidad
 
-requirements.txt → Dependencias del proyecto
+El sistema sigue el siguiente pipeline:
 
-Tecnologías Utilizadas
+1. Lectura de imagen de examen
+2. Extracción de texto mediante OCR
+3. Identificación de pregunta y respuesta
+4. Generación de referencia (controlada)
+5. Evaluación semántica de la respuesta del alumno
+6. Asignación de nota y feedback
 
-Python
+---
 
-OpenCV
+## Ejemplo de ejecución
 
-NumPy
+Entrada (imagen):
+- Imagen de un examen con pregunta y respuesta escrita
 
-OCR (previsto en fases posteriores)
+Salida del sistema:
 
-Técnicas de Procesamiento de Lenguaje Natural (previstas en fases posteriores)
+--- OCR ---
+Pregunta detectada: ¿Cuál es la función de la mitocondria?
+Respuesta detectada: La mitocondria produce energía para la célula.
 
-Estado Actual
+--- CORRECCIÓN ---
+Nota: 6.0
+Conceptos detectados: ['mitocondria', 'energía']
+Conceptos parciales: ['respiración celular']
+Conceptos ausentes: ['ATP']
 
-Se ha implementado la fase inicial del sistema, incluyendo el preprocesamiento de imágenes y la configuración básica del pipeline de trabajo.
+---
+
+## Estructura del proyecto
+
+src/ # Núcleo del sistema
+data/ # Imágenes de entrada
+requirements.txt
+
+
+---
+
+## Tecnologías utilizadas
+
+- Python
+- OpenCV
+- NumPy
+- Tesseract OCR
+- Técnicas básicas de NLP
+
+---
+
+## Estado actual
+
+El sistema permite:
+
+- Procesar imágenes reales
+- Extraer texto de forma automática
+- Evaluar respuestas abiertas de forma aproximada
+- Generar feedback basado en conceptos
+
+---
+
+## Limitaciones
+
+- Dependencia de la calidad del OCR
+- Evaluación basada en conceptos (no comprensión completa)
+- No sustituye el criterio humano
+
+---
+
+## Ejecución
+
+Instalar dependencias:
+
+pip install -r requirements.txt
+
+
+Ejecutar:
+
+python src/test_full_pipeline.py
+
+
+---
+
+## Adrián Soler Rodríguez
+
+Trabajo de Fin de Grado
