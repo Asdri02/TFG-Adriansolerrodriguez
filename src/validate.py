@@ -1,5 +1,5 @@
 """
-validate.py — 10 test cases for the semantic grading system.
+validate.py — 22 test cases for the semantic grading system.
 
 Run from the src/ directory:
     python validate.py
@@ -74,6 +74,23 @@ _REF_ADN = _ref(
         {"concept": "doble hélice",         "weight": 0.25},
         {"concept": "nucleótido",           "weight": 0.20},
         {"concept": "núcleo",               "weight": 0.20},
+    ],
+)
+
+_REF_CELULA_VEGETAL = _ref(
+    question="¿Qué diferencias estructurales hay entre una célula vegetal y una célula animal?",
+    ideal_answer=(
+        "Las células vegetales tienen pared celular de celulosa, cloroplastos "
+        "que realizan la fotosíntesis, y una vacuola central de gran tamaño. "
+        "Las células animales carecen de pared celular y cloroplastos, tienen "
+        "vacuolas pequeñas y poseen centríolos que participan en la división celular."
+    ),
+    key_concepts=[
+        {"concept": "pared celular",   "weight": 0.25},
+        {"concept": "cloroplasto",     "weight": 0.25},
+        {"concept": "vacuola",         "weight": 0.20},
+        {"concept": "centríolo",       "weight": 0.15},
+        {"concept": "celulosa",        "weight": 0.15},
     ],
 )
 
@@ -224,6 +241,187 @@ TEST_CASES = [
         "nota_min": 0.0,
         "nota_max": 2.0,
     },
+
+    # ── Sinónimos: ejercitan la bidireccionalidad de expand_with_synonyms ────
+
+    {
+        "id": 11,
+        "topic": "Mitocondria",
+        "desc": "Vocabulario alternativo: 'obtiene' en respuesta correcta",
+        "reference": _REF_MITOCONDRIA,
+        "student_answer": (
+            "La mitocondria es el orgánulo donde se obtiene energía en forma "
+            "de ATP gracias a la respiración celular."
+        ),
+        # orgánulo ✓  energía ✓  ATP ✓  respiración celular ✓
+        # "obtiene" pertenece al grupo "producir" → expansión bidireccional
+        "nota_min": 8.0,
+        "nota_max": 10.0,
+    },
+    {
+        "id": 12,
+        "topic": "Fotosíntesis",
+        "desc": "Vocabulario alternativo: 'fabricar' en respuesta correcta",
+        "reference": _REF_FOTOSINTESIS,
+        "student_answer": (
+            "Las plantas fabrican glucosa y oxígeno a partir de dióxido de "
+            "carbono y agua usando energía lumínica en los cloroplastos."
+        ),
+        # energía lumínica ✓  glucosa ✓  oxígeno ✓  CO₂ ✓  cloroplasto ✓
+        # "fabricar" → grupo "producir"; el resto está explícito
+        "nota_min": 8.0,
+        "nota_max": 10.0,
+    },
+
+    # ── Errores conceptuales: vocabulario reutilizado pero relación incorrecta ─
+
+    {
+        "id": 13,
+        "topic": "Mitocondria",
+        "desc": "Error conceptual: confunde mitocondria con núcleo",
+        "reference": _REF_MITOCONDRIA,
+        "student_answer": (
+            "La mitocondria es la parte de la célula donde se guarda la "
+            "información genética y el ADN."
+        ),
+        # "mitocondria" presente pero ningún concepto de la rúbrica cubierto
+        # (orgánulo, energía, ATP, respiración celular) → concept_ratio≈0
+        "nota_min": 0.0,
+        "nota_max": 2.5,
+    },
+    {
+        "id": 14,
+        "topic": "Fotosíntesis",
+        "desc": "Error conceptual: describe respiración celular en lugar de fotosíntesis",
+        "reference": _REF_FOTOSINTESIS,
+        "student_answer": (
+            "La fotosíntesis es el proceso por el que las células consumen "
+            "oxígeno y glucosa para liberar energía."
+        ),
+        # glucosa ✓ y oxígeno ✓ aparecen pero la dirección del proceso es la
+        # opuesta; faltan energía lumínica, CO₂, cloroplasto → concept_ratio bajo
+        "nota_min": 0.0,
+        "nota_max": 3.0,
+        # FAIL esperado: el sistema no detecta que la dirección del proceso es
+        # la inversa. Es la limitación que motiva la línea futura de
+        # "anti-patterns" descrita en CLAUDE.md.
+        "expected_to_fail": True,
+    },
+
+    # ── Borderline de longitud ──────────────────────────────────────────────
+
+    {
+        "id": 15,
+        "topic": "Mitocondria",
+        "desc": "Respuesta correcta pero brevísima (length_penalty vs min_floor)",
+        "reference": _REF_MITOCONDRIA,
+        "student_answer": "Orgánulo que produce ATP por respiración celular.",
+        # orgánulo ✓  ATP ✓  respiración celular ✓  energía ✗ (implícita en ATP)
+        # concept_ratio=0.75  →  min_floor=0.6 activo
+        # length_penalty alto por brevedad pero el suelo lo sostiene
+        "nota_min": 4.5,
+        "nota_max": 8.0,
+    },
+    {
+        "id": 16,
+        "topic": "ADN",
+        "desc": "Respuesta larga con conceptos diluidos (texto de relleno)",
+        "reference": _REF_ADN,
+        "student_answer": (
+            "El ADN es una de las moléculas más fascinantes de la biología. "
+            "Está presente en todos los seres vivos conocidos hasta la fecha "
+            "y ha sido objeto de muchísimos estudios desde su descubrimiento. "
+            "Tiene una forma característica que se ha popularizado mucho en "
+            "libros, películas y documentales."
+        ),
+        # ningún concepto técnico de la rúbrica (información genética, doble
+        # hélice, nucleótido, núcleo). Texto largo pero vacío de contenido.
+        "nota_min": 0.0,
+        "nota_max": 2.5,
+    },
+
+    # ── Célula vegetal vs. animal (6 casos) ─────────────────────────────────
+
+    {
+        "id": 17,
+        "topic": "Célula vegetal/animal",
+        "desc": "Respuesta completa (ambos tipos celulares contrastados)",
+        "reference": _REF_CELULA_VEGETAL,
+        "student_answer": (
+            "Las células vegetales tienen pared celular de celulosa, "
+            "cloroplastos para la fotosíntesis y una gran vacuola central. "
+            "Las animales no tienen pared celular ni cloroplastos, sus "
+            "vacuolas son pequeñas y tienen centríolos."
+        ),
+        # pared celular ✓  cloroplasto ✓  vacuola ✓  centríolo ✓  celulosa ✓
+        "nota_min": 8.0,
+        "nota_max": 10.0,
+    },
+    {
+        "id": 18,
+        "topic": "Célula vegetal/animal",
+        "desc": "Correcta enfocada solo en la célula vegetal",
+        "reference": _REF_CELULA_VEGETAL,
+        "student_answer": (
+            "La célula vegetal se diferencia por tener pared celular formada "
+            "por celulosa, cloroplastos y vacuolas grandes."
+        ),
+        # pared celular ✓  celulosa ✓  cloroplasto ✓  vacuola ✓  centríolo ✗
+        # concept_ratio=0.85; respuesta corta → length_penalty puede activarse
+        "nota_min": 5.5,
+        "nota_max": 8.5,
+    },
+    {
+        "id": 19,
+        "topic": "Célula vegetal/animal",
+        "desc": "Respuesta parcial (solo pared celular)",
+        "reference": _REF_CELULA_VEGETAL,
+        "student_answer": "La célula vegetal tiene pared celular y la animal no.",
+        # pared celular ✓  resto ✗ → concept_ratio=0.25; muy breve
+        "nota_min": 2.0,
+        "nota_max": 5.0,
+    },
+    {
+        "id": 20,
+        "topic": "Célula vegetal/animal",
+        "desc": "Vocabulario adyacente sin precisión técnica",
+        "reference": _REF_CELULA_VEGETAL,
+        "student_answer": (
+            "Las células de las plantas son rígidas y tienen partes verdes "
+            "para hacer la fotosíntesis."
+        ),
+        # ningún término de la rúbrica aparece literalmente: "verdes" no
+        # matchea "cloroplasto", "rígidas" no matchea "pared celular"
+        "nota_min": 1.5,
+        "nota_max": 4.5,
+    },
+    {
+        "id": 21,
+        "topic": "Célula vegetal/animal",
+        "desc": "Error conceptual: invierte qué célula tiene cada estructura",
+        "reference": _REF_CELULA_VEGETAL,
+        "student_answer": (
+            "Las células animales tienen pared celular y cloroplastos, "
+            "mientras que las vegetales no."
+        ),
+        # los conceptos pared celular y cloroplasto aparecen pero atribuidos
+        # al tipo celular incorrecto. El sistema no detecta la inversión.
+        "nota_min": 4.0,
+        "nota_max": 5.0,
+        # PASS expected by collateral penalization (incompleteness + length),
+        # NOT because the system detects the role inversion. A long, complete
+        # but inverted answer would expose the same limitation as case 14.
+    },
+    {
+        "id": 22,
+        "topic": "Célula vegetal/animal",
+        "desc": "Respuesta trivial (sin contenido técnico)",
+        "reference": _REF_CELULA_VEGETAL,
+        "student_answer": "Hay diferencias entre las células vegetales y las animales.",
+        # ningún concepto técnico → concept_ratio≈0
+        "nota_min": 0.0,
+        "nota_max": 2.0,
+    },
 ]
 
 
@@ -232,20 +430,31 @@ TEST_CASES = [
 def run_validation() -> None:
     grader = SemanticGrader()
     passed = 0
+    expected_fails = 0
+    unexpected_fails = 0
     total = len(TEST_CASES)
 
     print("=" * 72)
     print(f"{'VALIDATE — Sistema de Corrección Semántica':^72}")
-    print(f"{'10 casos · Biología básica':^72}")
+    print(f"{'22 casos · Biología básica':^72}")
     print("=" * 72)
 
     for case in TEST_CASES:
         result = grader.grade(case["student_answer"], case["reference"])
         score = result["score_over_10"]
         ok = case["nota_min"] <= score <= case["nota_max"]
-        passed += ok
+        expected_to_fail = case.get("expected_to_fail", False)
 
-        tag = "PASS ✓" if ok else "FAIL ✗"
+        if ok:
+            tag = "PASS ✓"
+            passed += 1
+        elif expected_to_fail:
+            tag = "FAIL esperado ⚠"
+            expected_fails += 1
+        else:
+            tag = "FAIL ✗"
+            unexpected_fails += 1
+
         snippet = case["student_answer"]
         if len(snippet) > 65:
             snippet = snippet[:65] + "…"
@@ -264,10 +473,15 @@ def run_validation() -> None:
                 f"     Parciales  : {result['partial_concepts']}"
             )
 
-    pct = passed / total * 100
-    verdict = "OK" if passed == total else f"{total - passed} caso(s) fallido(s)"
+    conformant = passed + expected_fails
+    pct = conformant / total * 100
+    verdict = "OK" if unexpected_fails == 0 else f"{unexpected_fails} fallo(s) inesperado(s)"
     print("\n" + "=" * 72)
-    print(f"  {passed}/{total} casos pasan  ·  {pct:.0f}% de precisión  ·  {verdict}")
+    print(
+        f"  {passed} PASS · {expected_fails} FAIL esperado · "
+        f"{unexpected_fails} FAIL inesperado  ·  "
+        f"{pct:.0f}% comportamiento conforme  ·  {verdict}"
+    )
     print("=" * 72)
 
 
