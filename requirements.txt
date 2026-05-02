@@ -3,3 +3,5 @@ opencv-python==4.13.0.92
 packaging==26.0
 pillow==12.1.1
 pytesseract==0.3.13
+anthropic==0.97.0
+python-dotenv==1.2.2
