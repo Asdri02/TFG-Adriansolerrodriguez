@@ -77,36 +77,67 @@ de código, sin texto adicional) con esta estructura exacta:
   "confidence": <float 0-1>
 }
 
+CRITERIOS DE CALIBRACIÓN:
+- La rúbrica debe ser adecuada al nivel educativo indicado.
+- Si el nivel es ESO o Bachillerato, NO incluyas conceptos universitarios o de gran detalle bioquímico (ej: ciclos metabólicos específicos por nombre, vías moleculares avanzadas, regulación iónica fina).
+- Los conceptos clave deben ser los que un alumno de ese nivel debería saber para responder correctamente, no los que un experto añadiría.
+- Máximo 5 conceptos clave. Mejor 4-5 conceptos centrales y bien ponderados que 8 conceptos diluidos.
+- Cada "concept" de key_concepts debe ser un término CORTO (1-3 palabras) que un alumno escribiría literalmente en su respuesta. NO frases descriptivas. Ejemplo correcto: "ATP", "respiración celular", "mitocondria", "ADN", "energía". Ejemplo INCORRECTO: "Producción de ATP y energía celular", "Estructura con membranas y crestas mitocondriales".
+
 Reglas:
-- key_concepts: entre 4 y 8 conceptos, pesos sumando exactamente 1.0, ordenados por importancia.
+- key_concepts: entre 4 y 5 conceptos, pesos sumando exactamente 1.0, ordenados por importancia.
 - rubric: puntos totales sumando 10.0.
 - Responde en el mismo idioma que la pregunta.
+
+IMPORTANTE: devuelve únicamente el JSON crudo, sin envolver en bloques de código markdown. Solo el objeto JSON.
 """.strip()
 
 
-def _generate_from_llm(question: str) -> Dict[str, Any]:
+def _strip_markdown_fence(raw: str) -> str:
+    """Remove markdown code fences if Claude wraps the JSON in them."""
+    stripped = raw.strip()
+    if stripped.startswith("```"):
+        first_newline = stripped.find("\n")
+        if first_newline != -1:
+            stripped = stripped[first_newline + 1:]
+        if stripped.endswith("```"):
+            stripped = stripped[:-3].rstrip()
+    return stripped
+
+
+def _cache_key(question: str, subject: str, education_level: str) -> str:
+    return f"{question}|{subject}|{education_level}"
+
+
+def _generate_from_llm(
+    question: str,
+    subject: str,
+    education_level: str,
+) -> Dict[str, Any]:
     """Call Claude and return the parsed JSON entry."""
     client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-haiku-4-5",
         max_tokens=1024,
         system=_SYSTEM_PROMPT,
         messages=[
             {
                 "role": "user",
                 "content": (
-                    "Genera la referencia de corrección para esta pregunta:\n\n"
+                    f"Materia: {subject}\n"
+                    f"Nivel educativo: {education_level}\n\n"
+                    f"Genera la referencia de corrección para esta pregunta:\n\n"
                     f"{question}"
                 ),
             }
         ],
     )
 
-    raw = response.content[0].text.strip()
+    raw = response.content[0].text
 
     try:
-        data = json.loads(raw)
+        data = json.loads(_strip_markdown_fence(raw))
     except json.JSONDecodeError as exc:
         raise ValueError(
             f"Claude devolvió JSON inválido para la pregunta «{question}».\n"
@@ -123,40 +154,36 @@ def _generate_from_llm(question: str) -> Dict[str, Any]:
 # ── public API ────────────────────────────────────────────────────────────────
 
 
-def get_reference(question: str) -> ReferenceAnswer:
+def get_reference(
+    question: str,
+    subject: str = "General",
+    education_level: str = "Bachillerato",
+) -> ReferenceAnswer:
     """
     Return a ReferenceAnswer for *question*, generating and caching it if needed.
+
+    The cache key is composed of (question, subject, education_level) so that
+    distinct calibrations can coexist.
 
     Compatible with SemanticGrader.grade(): the returned object's key_concepts is
     List[Dict] where each dict has "concept" (str) and "weight" (float), as required
     by SemanticGrader.concept_match_score().
-
-    Parameters
-    ----------
-    question : str
-        The exam question, used as the cache key (stripped).
-
-    Returns
-    -------
-    ReferenceAnswer
-        Populated with ideal_answer, key_concepts (weighted), rubric, common_mistakes,
-        and confidence. subject / education_level / expected_answer_type are left as
-        empty strings — enrich them at the call site if needed.
     """
     question = question.strip()
+    key = _cache_key(question, subject, education_level)
     cache = _load_cache()
 
-    if question not in cache:
-        entry = _generate_from_llm(question)
-        cache[question] = entry
+    if key not in cache:
+        entry = _generate_from_llm(question, subject, education_level)
+        cache[key] = entry
         _save_cache(cache)
 
-    entry = cache[question]
+    entry = cache[key]
 
     return ReferenceAnswer(
         question=question,
-        subject="",
-        education_level="",
+        subject=subject,
+        education_level=education_level,
         expected_answer_type="respuesta_abierta",
         ideal_answer=entry["ideal_answer"],
         # key_concepts stored as List[Dict] — matches SemanticGrader.concept_match_score()
@@ -172,14 +199,21 @@ def get_reference(question: str) -> ReferenceAnswer:
 
 def invalidate(question: str) -> bool:
     """
-    Remove *question* from the cache, forcing regeneration on the next call.
+    Remove every cached entry for *question* (across any subject/education_level
+    variant, plus the legacy single-key format), forcing regeneration on the
+    next call.
 
-    Returns True if the entry existed and was removed, False otherwise.
+    Returns True if at least one entry was removed, False otherwise.
     """
     question = question.strip()
     cache = _load_cache()
-    if question in cache:
-        del cache[question]
+    keys_to_remove = [
+        k for k in cache
+        if k == question or k.startswith(f"{question}|")
+    ]
+    for k in keys_to_remove:
+        del cache[k]
+    if keys_to_remove:
         _save_cache(cache)
         return True
     return False
