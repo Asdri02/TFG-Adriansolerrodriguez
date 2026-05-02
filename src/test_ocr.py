@@ -8,7 +8,7 @@ def main():
     image_path = Path("data/input/exam_open_question.jpg")
 
     extractor = OCRExtractor(
-        tesseract_cmd=r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+        tesseract_cmd=None
     )
 
     extractor.save_debug_image(
