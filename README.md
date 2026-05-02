@@ -90,6 +90,19 @@ python src/test_full_pipeline.py
 
 ---
 
+## Herramientas de desarrollo
+
+`bridge.py` es un script auxiliar (review/improve/explain de archivos del repo)
+que usa la API de Claude y la API de GitHub. **No forma parte del sistema de
+corrección** y no es necesario para ejecutar el pipeline ni los tests.
+
+Para utilizarlo:
+
+1. Instala sus dependencias: `pip install -r requirements-dev.txt`
+2. Copia `.env.example` a `.env` y rellena `ANTHROPIC_API_KEY` y `GITHUB_TOKEN`.
+
+---
+
 ## Adrián Soler Rodríguez
 
 Trabajo de Fin de Grado
