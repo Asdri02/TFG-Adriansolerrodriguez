@@ -11,7 +11,7 @@ from ai.models import ReferenceAnswer
 class SemanticGrader:
     def __init__(self):
         self.synonym_map = {
-            "producir": ["genera", "genera", "producir", "produce", "fabricar", "obtiene"],
+            "producir": ["genera", "producir", "produce", "fabricar", "obtiene"],
             "energia": ["energía", "energia", "energetica", "energética", "energetico", "energético"],
             "celula": ["célula", "celula", "celular"],
             "respiracion celular": ["respiración celular", "respiracion celular"],
@@ -34,11 +34,12 @@ class SemanticGrader:
         expanded = set(tokens)
 
         for canonical, variants in self.synonym_map.items():
-            canonical_norm = self.normalize_text(canonical)
+            group = {self.normalize_text(canonical)}
             for variant in variants:
-                variant_norm = self.normalize_text(variant)
-                if variant_norm in expanded:
-                    expanded.add(canonical_norm)
+                group.add(self.normalize_text(variant))
+
+            if group & expanded:
+                expanded |= group
 
         return expanded
 
