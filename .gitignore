@@ -1,5 +1,6 @@
 # Entorno virtual
 .venv/
+.venv_mac/
 
 # Python cache
 __pycache__/
@@ -10,6 +11,12 @@ __pycache__/
 
 # Datos de pruebas (si no quieres subirlos)
 data/input/
+
+# Variables de entorno (nunca subir al repositorio)
+.env
+
+# Caché generada por reference_db (puede contener respuestas de la API)
+data/reference_cache.json
 
 # Archivos del sistema
 .DS_Store
