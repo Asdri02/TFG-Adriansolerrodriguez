@@ -44,32 +44,38 @@ o ejecutarse con `-m` desde `src/`. Sin eso fallan con `ModuleNotFoundError`.
 Tesseract must be installed locally. On macOS:
 `brew install tesseract tesseract-lang`.
 
-## Known incoherences between code and thesis (priority work)
+## Known incoherences between code and thesis
 
-These were detected when reviewing `MemoriaTFG.pdf` against the source. Fix
-them carefully — every fix should keep `validate.py` passing.
+These were detected when reviewing `MemoriaTFG.pdf` against the source.
+
+### Resolved
+
+- ✅ **#4 — Synonym expansion** (commit `51568d5`). `expand_with_synonyms`
+  is now bidirectional (any group element triggers expansion of all others)
+  and the duplicate variant in the `producir` list is deduped.
+- ✅ **#5 — Init filenames** (commit `4e335a6`). `src/ai/init.py` and
+  `src/ocr/init_.py` renamed to `__init__.py`; package imports now work.
+
+### Pending — code is correct as-is, thesis sections need to be aligned
+
+Planned for the next memory revision session. Do not touch the code for these.
 
 1. **Min-floor / length-penalty order.** Section 4.6.7 of the memory writes
    `Nota = max(min_floor, 0.95·c + 0.05·s) · length_penalty`, but
-   `semantic_grader.py` applies length penalty *before* the `max`. Pick one
-   and unify code + memory.
+   `semantic_grader.py` applies length penalty *before* the `max` — i.e.
+   `max((0.95·c + 0.05·s) · length_penalty, min_floor)`. The code is the
+   intended behavior (the floor protects against any degradation, length
+   included). Rewrite 4.6.7 to match.
 2. **OCR preprocessing.** Sections 4.2 and 4.3 of the memory describe
    binarization and denoising as essential. The actual `extract_text_from_image`
    in `extractor.py` runs Tesseract on the raw image (`# SIN PREPROCESADO`).
-   Either (a) re-enable preprocessing in the call path, or (b) keep the code
-   as-is and rewrite the memory to explain that preprocessing was tested,
-   degraded results, and was therefore dropped.
+   Decision: keep the code as-is and rewrite the memory to explain that
+   preprocessing was tested, degraded results, and was therefore dropped.
 3. **Length penalty asymmetry.** The memory says the length factor penalizes
    answers that are too short *or* too long. The code only penalizes short
-   answers (no upper bound). Add an upper-bound branch or correct the memory.
-4. **Synonym expansion.** `expand_with_synonyms` in `semantic_grader.py` only
-   maps variants → canonical, not the other way around, so a student writing
-   "fabricar" will not match a key concept "produce". Also the `producir`
-   list contains `"generar"` twice. Fix to make it bidirectional and dedupe.
-5. **Init filenames.** The repo lists `init.py` and `init_.py` (no double
-   underscores). If those are the real filenames, package imports
-   (`from ai.semantic_grader import ...`) will fail. Verify and rename to
-   `__init__.py` if needed.
+   answers (no upper bound). Decision: keep the code as-is (a long answer
+   that still covers the rubric is not worse than a short one) and correct
+   the memory.
 
 ## Improvements to consider after the incoherences are fixed
 
