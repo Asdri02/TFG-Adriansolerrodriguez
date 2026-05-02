@@ -17,6 +17,7 @@ Examples:
 Environment variables (loaded from .env):
     GITHUB_TOKEN      — Personal Access Token with repo read access
     ANTHROPIC_API_KEY — Anthropic API key
+    GITHUB_REPO       — Optional, "owner/repo" target. Defaults to the current repo.
 """
 
 import argparse
@@ -29,7 +30,7 @@ import os
 
 load_dotenv()
 
-REPO = "asdri02/tfg_exam_grader"
+REPO = os.environ.get("GITHUB_REPO", "Asdri02/TFG-Adriansolerrodriguez")
 GITHUB_API = "https://api.github.com"
 
 SYSTEM_PROMPTS = {
