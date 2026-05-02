@@ -1,0 +1,56 @@
+{
+  "¿Cuál es la función de la mitocondria?|Biología|Bachillerato": {
+    "ideal_answer": "La mitocondria es el orgánulo celular responsable de la producción de energía en forma de ATP mediante la respiración celular aeróbica. En su interior ocurren el ciclo de Krebs y la cadena de transporte de electrones, procesos que extraen la energía química de las moléculas de glucosa y otros nutrientes. La mitocondria posee una doble membrana (externa e interna), siendo la membrana interna donde se localizan las proteínas transportadoras de electrones. Además de producir ATP, la mitocondria también participa en la regulación del calcio celular y en la síntesis de algunas moléculas. Por estas funciones, la mitocondria es considerada la 'central energética' de la célula.",
+    "key_concepts": [
+      {
+        "concept": "Producción de ATP",
+        "weight": 0.35
+      },
+      {
+        "concept": "Respiración celular aeróbica",
+        "weight": 0.25
+      },
+      {
+        "concept": "Doble membrana",
+        "weight": 0.2
+      },
+      {
+        "concept": "Ciclo de Krebs",
+        "weight": 0.15
+      },
+      {
+        "concept": "Cadena de transporte de electrones",
+        "weight": 0.05
+      }
+    ],
+    "common_mistakes": [
+      "Confundir la mitocondria con el cloroplasto (que realiza fotosíntesis, no respiración)",
+      "Afirmar que la mitocondria produce solo ATP sin mencionar los procesos metabólicos que lo generan",
+      "Omitir la importancia de la doble membrana para la respiración celular",
+      "Considerar que la mitocondria solo existe en células vegetales"
+    ],
+    "rubric": [
+      {
+        "criterion": "Identifica la función principal: producción de ATP/energía",
+        "points": 3.0
+      },
+      {
+        "criterion": "Menciona la respiración celular aeróbica como proceso clave",
+        "points": 2.5
+      },
+      {
+        "criterion": "Describe la participación del ciclo de Krebs o cadena de transporte de electrones",
+        "points": 2.0
+      },
+      {
+        "criterion": "Indica la estructura de doble membrana y su relevancia",
+        "points": 1.5
+      },
+      {
+        "criterion": "Claridad y organización de la respuesta",
+        "points": 1.0
+      }
+    ],
+    "confidence": 0.92
+  }
+}
