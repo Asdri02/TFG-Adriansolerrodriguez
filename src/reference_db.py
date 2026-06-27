@@ -119,6 +119,7 @@ def _generate_from_llm(
 
     response = client.messages.create(
         model="claude-haiku-4-5",
+        temperature=0,
         max_tokens=1024,
         system=_SYSTEM_PROMPT,
         messages=[

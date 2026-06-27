@@ -22,3 +22,8 @@ class ReferenceAnswer:
     rubric: List[RubricItem] = field(default_factory=list)
     common_mistakes: List[str] = field(default_factory=list)
     confidence: float = 0.0
+    # Términos técnicos con peso aditivo, pensado para asignaturas como
+    # Filosofía donde usar vocabulario técnico debe sumar más allá del 100% de
+    # la rúbrica base. Cada item es {"term": str, "weight": float (0-1)}.
+    # SemanticGrader.grade los suma al ratio final y capea a 1.0.
+    bonus_terms: List[Any] = field(default_factory=list)

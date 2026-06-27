@@ -52,5 +52,64 @@
       }
     ],
     "confidence": 0.92
+  },
+  "¿Qué es la fotosíntesis?|Biología|Bachillerato": {
+    "ideal_answer": "La fotosíntesis es un proceso biológico mediante el cual los organismos autótrofos, principalmente las plantas y algas, utilizan la luz solar para convertir dióxido de carbono (CO₂) y agua (H₂O) en glucosa (azúcares) y oxígeno. Este proceso ocurre principalmente en los cloroplastos de las células vegetales y consta de dos fases principales: la fase luminosa (dependiente de luz), que ocurre en los tilacoides y produce ATP y NADPH a partir de la luz solar, y la fase oscura o ciclo de Calvin (independiente de luz), que ocurre en el estroma y utiliza el ATP y NADPH para sintetizar glucosa a partir del CO₂. La ecuación general simplificada es: 6CO₂ + 6H₂O + luz → C₆H₁₂O₆ + 6O₂. La fotosíntesis es fundamental para la vida en la Tierra, ya que produce el oxígeno que respiramos y es la base de prácticamente todas las cadenas alimentarias.",
+    "key_concepts": [
+      {
+        "concept": "Conversión de luz en energía química",
+        "weight": 0.25
+      },
+      {
+        "concept": "CO₂ y agua como reactivos",
+        "weight": 0.2
+      },
+      {
+        "concept": "Glucosa y oxígeno como productos",
+        "weight": 0.2
+      },
+      {
+        "concept": "Cloroplastos",
+        "weight": 0.2
+      },
+      {
+        "concept": "Fase luminosa y fase oscura",
+        "weight": 0.15
+      }
+    ],
+    "common_mistakes": [
+      "Confundir fotosíntesis con respiración celular",
+      "Omitir el oxígeno como producto importante",
+      "No mencionar que ocurre en los cloroplastos",
+      "Describir solo una de las dos fases sin mencionar la otra",
+      "Olvidar que es un proceso de conversión de energía luminosa en energía química"
+    ],
+    "rubric": [
+      {
+        "criterion": "Define correctamente fotosíntesis como proceso de transformación de luz en energía química",
+        "points": 2.0
+      },
+      {
+        "criterion": "Identifica correctamente los reactivos (CO₂ y H₂O)",
+        "points": 1.5
+      },
+      {
+        "criterion": "Identifica correctamente los productos (glucosa y O₂)",
+        "points": 1.5
+      },
+      {
+        "criterion": "Menciona el lugar donde ocurre (cloroplastos) y la ubicación en la célula",
+        "points": 1.5
+      },
+      {
+        "criterion": "Describe las dos fases principales (luminosa y oscura) o su dependencia de luz",
+        "points": 2.0
+      },
+      {
+        "criterion": "Explica la importancia de la fotosíntesis para la vida en la Tierra",
+        "points": 1.5
+      }
+    ],
+    "confidence": 0.92
   }
 }

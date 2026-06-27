@@ -12,9 +12,16 @@ __pycache__/
 # Datos de pruebas (si no quieres subirlos)
 data/input/
 
+# Datos generados en tiempo de ejecución por la web (config del profesor,
+# ejemplos calibrados, cuaderno). Cada usuario los regenera.
+data/teacher_config.json
+data/*.db
+
 # Variables de entorno (nunca subir al repositorio)
 .env
 
 # Archivos del sistema
 .DS_Store
 Thumbs.db
+# Datos externos de terceros (no se versionan; se descargan con el script)
+experiments/external/

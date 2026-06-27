@@ -5,3 +5,12 @@ pillow==12.1.1
 pytesseract==0.3.13
 anthropic==0.97.0
 python-dotenv==1.2.2
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.17
+python-docx==1.1.2
+sympy==1.14.0
+
+# Test (dev). httpx lo requiere fastapi.testclient.
+pytest==9.0.3
+httpx==0.28.1

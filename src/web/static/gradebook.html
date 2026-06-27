@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cuaderno del Profesor · TFG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
+  <style>
+    .gb-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+    .gb-sidebar { position: sticky; top: 16px; }
+    .gb-class { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+                margin-bottom: 8px; cursor: pointer; background: var(--surface); transition: .12s; }
+    .gb-class:hover { border-color: var(--primary); }
+    .gb-class.active { border-color: var(--primary); background: var(--primary-soft); }
+    .gb-class-name { font-weight: 600; }
+    .gb-class-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .gb-subnav { display: flex; gap: 6px; margin: 4px 0 18px; flex-wrap: wrap; }
+    .gb-grade-table { width: 100%; border-collapse: collapse; }
+    .gb-grade-table th, .gb-grade-table td { padding: 8px 10px; border-bottom: 1px solid var(--border);
+                vertical-align: middle; text-align: left; font-size: 14px; }
+    .gb-grade-table textarea { width: 100%; min-height: 38px; resize: vertical; font-size: 13px; }
+    .gb-score { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .gb-score.pass { color: var(--success); }
+    .gb-score.fail { color: var(--danger); }
+    .gb-pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+    .gb-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+    .gb-row .field { flex: 1; min-width: 160px; }
+    .gb-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin: 12px 0; }
+    .gb-hidden { display:none; }
+    .gb-empty { text-align:center; color:var(--muted); padding: 40px 0; }
+    a.gb-linkbtn { display:inline-block; padding:8px 14px; border-radius:var(--radius-sm);
+                border:1px solid var(--border-strong); color:var(--text); text-decoration:none;
+                font-weight:500; font-size:14px; background:var(--surface); }
+    a.gb-linkbtn:hover { background:var(--surface-strong); }
+    button.danger { background:var(--danger-soft); border-color:var(--danger-soft); color:var(--danger); }
+    button.danger:hover { background:var(--danger); color:#fff; border-color:var(--danger); }
+    .gb-x { background:none; border:none; color:var(--muted); cursor:pointer; font-size:16px; padding:2px 6px; }
+    .gb-x:hover { color:var(--danger); }
+    @media (max-width: 820px){ .gb-layout{ grid-template-columns:1fr; } .gb-sidebar{ position:static; } }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-row">
+      <a class="brand" href="/" aria-label="Volver al corrector" style="text-decoration:none;">
+        <span class="brand-mark">TFG</span>
+        <span class="brand-text">
+          <span class="brand-title">Cuaderno del Profesor</span>
+          <span class="brand-sub">Clases · Alumnos · Exámenes · Notas</span>
+        </span>
+      </a>
+      <div class="header-actions">
+        <a class="gb-linkbtn" href="/">← Corrector</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding: 20px 0 60px;">
+    <div class="gb-layout">
+      <!-- Sidebar: clases -->
+      <aside class="gb-sidebar">
+        <div class="card">
+          <h3 style="margin-top:0;">Mis clases</h3>
+          <div id="gb-classes"></div>
+          <details style="margin-top:12px;">
+            <summary class="muted" style="cursor:pointer;">+ Nueva clase</summary>
+            <div style="margin-top:10px;">
+              <div class="field"><label>Nombre</label>
+                <input id="gb-new-class-name" placeholder="1º Bach B"></div>
+              <div class="field"><label>Asignatura</label>
+                <input id="gb-new-class-subject" placeholder="Biología"></div>
+              <div class="field"><label>Curso</label>
+                <input id="gb-new-class-year" placeholder="2025-2026"></div>
+              <button class="primary" id="gb-create-class">Crear clase</button>
+            </div>
+          </details>
+        </div>
+      </aside>
+
+      <!-- Panel principal -->
+      <section id="gb-main">
+        <div class="gb-empty card">Selecciona o crea una clase para empezar.</div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/static/gradebook.js" defer></script>
+</body>
+</html>

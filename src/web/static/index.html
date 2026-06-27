@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corrector Semántico de Exámenes · TFG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-row">
+      <button class="brand" id="btn-home" aria-label="Volver al inicio">
+        <span class="brand-mark">TFG</span>
+        <span class="brand-text">
+          <span class="brand-title">Corrector Semántico de Exámenes</span>
+          <span class="brand-sub">Adrián Soler Rodríguez · 2026</span>
+        </span>
+      </button>
+      <div class="header-actions">
+        <a class="ghost" href="/aula" style="text-decoration:none;display:inline-flex;align-items:center;padding:8px 14px;border-radius:var(--radius-sm);">📒 Cuaderno del profesor</a>
+        <button class="theme-toggle" id="btn-theme" aria-label="Cambiar tema">
+          <span class="theme-icon light">☀</span>
+          <span class="theme-icon dark">☾</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs hidden" id="tab-nav" role="tablist">
+    <div class="container tabs-row">
+      <button class="tab active" data-tab="grade" role="tab">Corregir</button>
+      <button class="tab" data-tab="materias" role="tab">Materias</button>
+      <button class="tab" data-tab="ocr" role="tab">Procesar imagen</button>
+      <button class="tab" data-tab="teacher" role="tab">Aula del Profesor</button>
+      <button class="tab" data-tab="dashboard" role="tab">Validación</button>
+      <button class="tab" data-tab="history" role="tab">
+        Historial <span class="badge" id="history-count">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <!-- ────────────── TAB: Landing ────────────── -->
+    <section class="tab-panel landing active" id="tab-landing">
+      <div class="hero">
+        <span class="hero-eyebrow">Trabajo de Fin de Grado · Ingeniería Informática</span>
+        <h1 class="hero-title">Corrección automática de preguntas abiertas</h1>
+        <p class="hero-lead">
+          Sistema híbrido que combina <strong>OCR</strong>, <strong>parseo</strong>
+          y un <strong>grader semántico</strong> con conceptos clave ponderados,
+          extensible con un <strong>asistente IA personalizable por el profesor</strong>.
+        </p>
+        <p class="hero-meta">40 casos de validación · 2 asignaturas · 100 % comportamiento conforme</p>
+      </div>
+
+      <h2 class="landing-section-title">¿Qué quieres hacer?</h2>
+      <div class="landing-grid">
+        <button class="landing-card" data-go="grade">
+          <div class="landing-icon">📝</div>
+          <h3>Corregir respuestas</h3>
+          <p>Una respuesta o un lote completo de la clase. Casos pre-calibrados
+            o pregunta personalizada.</p>
+          <span class="landing-cta">Empezar →</span>
+        </button>
+
+        <button class="landing-card" data-go="ocr">
+          <div class="landing-icon">📸</div>
+          <h3>Procesar imagen de examen</h3>
+          <p>Sube una foto del examen, extrae el texto con OCR y mándalo al
+            corrector.</p>
+          <span class="landing-cta">Subir imagen →</span>
+        </button>
+
+        <button class="landing-card" data-go="materias">
+          <div class="landing-icon">📚</div>
+          <h3>Materias</h3>
+          <p>Catálogo de asignaturas con preguntas frecuentes pre-cargadas.
+            Atajo rápido a presets típicos de Bachillerato.</p>
+          <span class="landing-cta">Ver materias →</span>
+        </button>
+
+        <button class="landing-card highlight" data-go="teacher">
+          <div class="landing-icon">🎓</div>
+          <h3>Aula del Profesor</h3>
+          <p>Asistente IA que propone rúbricas, calibración con tus ejemplos y
+            personalización de sinónimos y antipatrones.</p>
+          <span class="landing-cta">Configurar →</span>
+        </button>
+
+        <button class="landing-card" data-go="dashboard">
+          <div class="landing-icon">📊</div>
+          <h3>Validación del sistema</h3>
+          <p>Ejecuta los 40 casos y consulta el desglose por asignatura y tema
+            con gráficos.</p>
+          <span class="landing-cta">Ver dashboard →</span>
+        </button>
+
+        <button class="landing-card" data-go="history">
+          <div class="landing-icon">🕓</div>
+          <h3>Historial</h3>
+          <p>Revisa correcciones anteriores y consulta los resultados que
+            obtuviste.</p>
+          <span class="landing-cta">Ver historial →</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ────────────── TAB: Corregir (Individual + Lote) ────────────── -->
+    <section class="tab-panel" id="tab-grade">
+
+      <div class="mode-switch">
+        <button class="mode-btn active" data-mode="individual">Una respuesta</button>
+        <button class="mode-btn" data-mode="batch">Lote (varias a la vez)</button>
+      </div>
+
+      <!-- Modo individual (lo que ya había) -->
+      <div class="mode-pane active" id="mode-individual">
+        <div class="grid">
+          <article class="card">
+            <h2>1 · Elige una referencia</h2>
+            <label class="field">
+              <span>Caso pre-cargado</span>
+              <select id="case-select">
+                <option value="">— Personalizado —</option>
+              </select>
+            </label>
+
+            <div id="reference-view" class="reference-view hidden">
+              <div class="ref-meta">
+                <span class="chip" id="ref-subject"></span>
+                <span class="chip secondary" id="ref-level"></span>
+              </div>
+              <h3 id="ref-question"></h3>
+              <p class="ideal" id="ref-ideal"></p>
+              <div class="concepts" id="ref-concepts"></div>
+            </div>
+
+            <div id="reference-custom" class="reference-custom">
+              <label class="field">
+                <span>Pregunta</span>
+                <input type="text" id="cust-question" placeholder="¿Cuál es la función principal de la mitocondria?">
+              </label>
+              <div class="two-col">
+                <label class="field">
+                  <span>Asignatura</span>
+                  <input type="text" id="cust-subject" value="General">
+                </label>
+                <label class="field">
+                  <span>Nivel</span>
+                  <input type="text" id="cust-level" value="Bachillerato">
+                </label>
+              </div>
+              <label class="field">
+                <span>Respuesta ideal</span>
+                <textarea id="cust-ideal" rows="3"></textarea>
+              </label>
+              <label class="field">
+                <span>Conceptos clave (uno por línea, formato <code>concepto:peso</code>)</span>
+                <textarea id="cust-concepts" rows="4" placeholder="ATP:0.35&#10;respiración celular:0.25&#10;energía:0.25&#10;orgánulo:0.15"></textarea>
+              </label>
+              <details class="bonus-details">
+                <summary>+ Términos bonus (vocabulario técnico, p.ej. Filosofía)</summary>
+                <label class="field" style="margin-top:8px">
+                  <span>Bonus (<code>término:peso</code>, suma sin tope a los conceptos)</span>
+                  <textarea id="cust-bonus" rows="3" placeholder="epistemología:0.05&#10;ontológico:0.05&#10;hermenéutica:0.05"></textarea>
+                </label>
+              </details>
+              <div class="actions">
+                <button class="ghost ai" id="btn-ai-fill" type="button">
+                  <span>✨</span> Generar con IA
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>2 · Respuesta del alumno</h2>
+            <textarea id="student-answer" rows="10" placeholder="Escribe o pega aquí la respuesta del alumno..."></textarea>
+            <div class="actions">
+              <button class="primary" id="btn-grade">Corregir</button>
+              <button class="ghost" id="btn-reset">Limpiar</button>
+            </div>
+          </article>
+
+          <article class="card result-card hidden" id="result-card">
+            <h2>3 · Resultado</h2>
+
+            <div class="score-block">
+              <div class="score-big" id="score-big">—</div>
+              <div class="score-info">
+                <div class="score-bar"><div class="score-fill" id="score-fill"></div></div>
+                <p class="feedback" id="feedback"></p>
+              </div>
+            </div>
+
+            <div class="alert alert-warning hidden" id="antipattern-banner">
+              <strong>Antipatrón detectado.</strong>
+              <span id="antipattern-text"></span>
+            </div>
+
+            <div class="metrics">
+              <div class="metric">
+                <span class="metric-label">Ratio conceptos</span>
+                <span class="metric-value" id="m-concept">—</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Similitud global</span>
+                <span class="metric-value" id="m-similarity">—</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Factor longitud</span>
+                <span class="metric-value" id="m-length">—</span>
+              </div>
+            </div>
+
+            <h3 class="section-title">Comparativa</h3>
+            <div class="compare-grid">
+              <div class="compare-col">
+                <h4>Respuesta ideal</h4>
+                <p class="compare-text" id="compare-ideal"></p>
+              </div>
+              <div class="compare-col">
+                <h4>Respuesta del alumno</h4>
+                <p class="compare-text" id="compare-student"></p>
+              </div>
+            </div>
+            <div class="legend">
+              <span class="legend-item"><span class="legend-dot detected"></span>concepto detectado</span>
+              <span class="legend-item"><span class="legend-dot partial"></span>parcial</span>
+              <span class="legend-item"><span class="legend-dot missing"></span>esperado pero no detectado</span>
+            </div>
+
+            <h3 class="section-title">Conceptos</h3>
+            <div class="concept-lists">
+              <div class="concept-col detected">
+                <h4>Detectados</h4>
+                <ul id="list-detected"></ul>
+              </div>
+              <div class="concept-col partial">
+                <h4>Parciales</h4>
+                <ul id="list-partial"></ul>
+              </div>
+              <div class="concept-col missing">
+                <h4>Faltantes</h4>
+                <ul id="list-missing"></ul>
+              </div>
+            </div>
+
+            <div class="bonus-block hidden" id="bonus-block">
+              <h3 class="section-title">Términos bonus aplicados</h3>
+              <ul id="list-bonus" class="bullet-list"></ul>
+            </div>
+
+            <h3 class="section-title">Explicación didáctica</h3>
+            <div class="explain-wrap">
+              <button class="ghost ai" id="btn-explain">
+                <span>✨</span> Explicar esta nota con IA
+              </button>
+              <p class="extracted hidden" id="explain-text"></p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Modo lote -->
+      <div class="mode-pane" id="mode-batch">
+        <div class="grid">
+          <article class="card">
+            <h2>1 · Referencia (la misma para todas)</h2>
+            <label class="field">
+              <span>Caso pre-cargado</span>
+              <select id="batch-case-select">
+                <option value="">— Personalizado —</option>
+              </select>
+            </label>
+
+            <div id="batch-reference-custom">
+              <label class="field">
+                <span>Pregunta</span>
+                <input type="text" id="batch-question" placeholder="¿Cuál es la función principal de la mitocondria?">
+              </label>
+              <div class="two-col">
+                <label class="field">
+                  <span>Asignatura</span>
+                  <input type="text" id="batch-subject" value="General">
+                </label>
+                <label class="field">
+                  <span>Nivel</span>
+                  <input type="text" id="batch-level" value="Bachillerato">
+                </label>
+              </div>
+              <label class="field">
+                <span>Respuesta ideal</span>
+                <textarea id="batch-ideal" rows="3"></textarea>
+              </label>
+              <label class="field">
+                <span>Conceptos clave (uno por línea, formato <code>concepto:peso</code>)</span>
+                <textarea id="batch-concepts" rows="4" placeholder="ATP:0.35&#10;respiración celular:0.25&#10;energía:0.25&#10;orgánulo:0.15"></textarea>
+              </label>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>2 · Respuestas de los alumnos</h2>
+            <p class="muted small">
+              Tres formatos: una respuesta por línea en el textarea,
+              <strong>CSV</strong> con columnas <code>alumno,respuesta</code>, o
+              <strong>TXT</strong> con respuestas separadas por <code>---</code>.
+            </p>
+            <div class="actions">
+              <label class="ghost file-btn">
+                Subir CSV
+                <input type="file" id="batch-csv" accept=".csv,text/csv" hidden>
+              </label>
+              <label class="ghost file-btn">
+                Subir TXT
+                <input type="file" id="batch-txt" accept=".txt,text/plain" hidden>
+              </label>
+              <button class="ghost" id="btn-batch-clear">Vaciar</button>
+            </div>
+            <label class="field">
+              <span>Pega o edita aquí (una por línea, o varias separadas por <code>---</code>)</span>
+              <textarea id="batch-answers" rows="10" placeholder="Respuesta del alumno 1&#10;Respuesta del alumno 2&#10;..."></textarea>
+            </label>
+            <p class="muted small" id="batch-count">0 respuestas detectadas</p>
+            <div class="actions">
+              <button class="primary" id="btn-batch-grade">Corregir todas</button>
+            </div>
+          </article>
+
+          <article class="card result-card hidden" id="batch-result-card">
+            <div class="dashboard-head">
+              <h2>3 · Resultado del lote</h2>
+              <button class="ghost" id="btn-batch-export">Exportar CSV</button>
+            </div>
+
+            <div class="stats" id="batch-stats"></div>
+
+            <h3 class="section-title">Distribución de notas</h3>
+            <div class="chart-wrap"><canvas id="chart-histogram"></canvas></div>
+
+            <h3 class="section-title">Top errores de la clase</h3>
+            <p class="muted small">
+              Conceptos que han faltado a más alumnos. Útil para decidir en
+              qué incidir en clase.
+            </p>
+            <div class="table-wrap">
+              <table class="cases-table" id="batch-errors-table">
+                <thead>
+                  <tr>
+                    <th>Concepto</th>
+                    <th>Alumnos a los que falta</th>
+                    <th>% del lote</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="batch-errors-tbody"></tbody>
+              </table>
+            </div>
+
+            <h3 class="section-title">Detalle por alumno</h3>
+            <div class="table-wrap">
+              <table class="cases-table">
+                <thead>
+                  <tr>
+                    <th>Alumno</th>
+                    <th>Respuesta</th>
+                    <th>Nota</th>
+                    <th>Detectados</th>
+                    <th>Faltantes</th>
+                  </tr>
+                </thead>
+                <tbody id="batch-tbody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────── TAB: Materias ────────────── -->
+    <section class="tab-panel" id="tab-materias">
+
+      <!-- Sección: Plantillas de examen reutilizables -->
+      <div class="teacher-intro" style="margin-bottom:14px">
+        <h2>📋 Plantillas de examen reutilizables</h2>
+        <p class="muted">
+          Define las respuestas correctas <strong>una vez</strong> y aplica la
+          plantilla a la foto de cada alumno con un click. Pensado para
+          corrección masiva (30 alumnos sin reescribir nada).
+        </p>
+      </div>
+      <div id="templates-list" class="materias-grid"></div>
+      <div class="actions" style="margin-bottom:32px">
+        <button class="primary" id="btn-template-new">+ Crear plantilla nueva</button>
+      </div>
+
+      <!-- Sección: Modelos predefinidos -->
+      <div class="teacher-intro" style="margin-top:8px;padding-top:24px;border-top:1px solid var(--border)">
+        <h2>✨ Modelos predefinidos</h2>
+        <p class="muted">
+          Plantillas de ejemplo listas para usar como punto de partida.
+          Click en una para añadirla a tu lista; luego puedes editar las
+          respuestas correctas o ampliar filas.
+        </p>
+      </div>
+      <div id="preset-templates-list" class="materias-grid" style="margin-bottom:24px"></div>
+
+      <!-- Sección: Catálogo (presets) -->
+      <div class="teacher-intro" style="margin-top:24px;padding-top:24px;border-top:1px solid var(--border)">
+        <h2>📚 Catálogo de materias (presets rápidos)</h2>
+        <p class="muted">
+          Asignaturas con preguntas típicas pre-calibradas. Click en una
+          pregunta para llevarla al corrector con su rúbrica.
+        </p>
+      </div>
+      <div id="materias-grid" class="materias-grid"></div>
+    </section>
+
+    <!-- ────────────── Modal: Crear plantilla ────────────── -->
+    <div class="modal hidden" id="modal-template-new">
+      <div class="modal-content">
+        <div class="modal-head">
+          <h2>Crear plantilla nueva</h2>
+          <button class="ghost icon-only" data-close-modal="modal-template-new">✕</button>
+        </div>
+        <div class="modal-body">
+          <label class="field">
+            <span>Nombre</span>
+            <input type="text" id="new-tpl-name" placeholder="Formulación inorgánica · Mayo 2026">
+          </label>
+          <div class="two-col">
+            <label class="field">
+              <span>Asignatura</span>
+              <input type="text" id="new-tpl-subject" placeholder="Química">
+            </label>
+            <label class="field">
+              <span>Nivel</span>
+              <input type="text" id="new-tpl-level" placeholder="Bachillerato">
+            </label>
+          </div>
+
+          <h3>¿Cómo creas la estructura?</h3>
+          <div class="mode-switch" style="margin-bottom:14px">
+            <button class="mode-btn active" data-create-mode="manual">Manual</button>
+            <button class="mode-btn" data-create-mode="blank">Imagen del examen vacío</button>
+            <button class="mode-btn" data-create-mode="corrected">Imagen del examen corregido</button>
+          </div>
+
+          <div class="create-pane active" id="create-manual">
+            <p class="muted small">Empieza con una tabla básica y la editas tras crear.</p>
+            <label class="field">
+              <span>Cabeceras (separadas por coma)</span>
+              <input type="text" id="manual-headers" value="Pregunta,Respuesta correcta">
+            </label>
+            <label class="field">
+              <span>Número de filas inicial</span>
+              <input type="number" id="manual-nrows" min="1" max="50" value="5">
+            </label>
+          </div>
+
+          <div class="create-pane" id="create-blank">
+            <p class="muted small">
+              Sube el examen <strong>en blanco</strong>. Vision IA extrae la
+              estructura y propone las respuestas correctas para cada hueco.
+              Tú las revisas después.
+            </p>
+            <input type="file" id="tpl-blank-image" accept="image/*">
+            <div class="preview-wrap"><img id="tpl-blank-preview" class="hidden" alt=""></div>
+          </div>
+
+          <div class="create-pane" id="create-corrected">
+            <p class="muted small">
+              Sube el examen <strong>con tus respuestas correctas escritas</strong>
+              (a mano o pegadas). Vision extrae todo y usa esas respuestas como
+              soluciones.
+            </p>
+            <input type="file" id="tpl-corrected-image" accept="image/*">
+            <div class="preview-wrap"><img id="tpl-corrected-preview" class="hidden" alt=""></div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="ghost" data-close-modal="modal-template-new">Cancelar</button>
+          <button class="primary" id="btn-template-create">Crear plantilla</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── Modal: Vista de plantilla ────────────── -->
+    <div class="modal hidden" id="modal-template-view">
+      <div class="modal-content large">
+        <div class="modal-head">
+          <div>
+            <h2 id="view-tpl-name">—</h2>
+            <p class="muted small">
+              <span id="view-tpl-subject"></span> · <span id="view-tpl-level"></span>
+            </p>
+          </div>
+          <button class="ghost icon-only" data-close-modal="modal-template-view">✕</button>
+        </div>
+        <div class="modal-body">
+          <nav class="subnav">
+            <button class="subnav-btn active" data-tplsub="structure">Estructura y soluciones</button>
+            <button class="subnav-btn" data-tplsub="apply">Aplicar a alumno</button>
+            <button class="subnav-btn" data-tplsub="gradings">
+              Historial <span class="badge" id="view-tpl-gcount">0</span>
+            </button>
+            <button class="subnav-btn" data-tplsub="stats">Estadísticas</button>
+          </nav>
+
+          <div class="tpl-sub active" id="tpl-sub-structure">
+            <p class="muted small">
+              Edita los textos de contexto y las respuestas correctas. Guarda
+              para persistir.
+            </p>
+            <div class="table-wrap">
+              <table class="cases-table structured-table" id="tpl-edit-table"></table>
+            </div>
+            <div class="actions">
+              <button class="primary" id="btn-tpl-save">Guardar cambios</button>
+              <button class="ghost" id="btn-tpl-delete">Eliminar plantilla</button>
+            </div>
+          </div>
+
+          <div class="tpl-sub" id="tpl-sub-apply">
+            <label class="field">
+              <span>Nombre del alumno</span>
+              <input type="text" id="apply-student-name" placeholder="Pablo García">
+            </label>
+            <label class="field">
+              <span>Foto del examen del alumno</span>
+              <input type="file" id="apply-image" accept="image/*">
+            </label>
+            <div class="preview-wrap"><img id="apply-preview" class="hidden" alt=""></div>
+            <div class="actions">
+              <button class="primary ai" id="btn-apply-grade">
+                <span>✨</span> Corregir
+              </button>
+            </div>
+            <div id="apply-result" class="hidden" style="margin-top:18px"></div>
+          </div>
+
+          <div class="tpl-sub" id="tpl-sub-gradings">
+            <div class="actions" style="margin-bottom:10px">
+              <button class="ghost" id="btn-export-gradings">Exportar CSV</button>
+              <button class="ghost" id="btn-reload-gradings">Recargar</button>
+            </div>
+            <div class="table-wrap">
+              <table class="cases-table">
+                <thead><tr><th>Alumno</th><th>Nota</th><th>Fecha</th><th></th></tr></thead>
+                <tbody id="gradings-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tpl-sub" id="tpl-sub-stats">
+            <div class="stats" id="tpl-stats-numbers"></div>
+            <h3 class="section-title">Errores más frecuentes</h3>
+            <div class="table-wrap">
+              <table class="cases-table">
+                <thead><tr><th>Celda</th><th>Falló a</th><th>%</th></tr></thead>
+                <tbody id="tpl-top-errors-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── TAB: OCR ────────────── -->
+    <section class="tab-panel" id="tab-ocr">
+
+      <div class="mode-switch">
+        <button class="mode-btn active" data-ocr-mode="simple">Imagen simple (Tesseract)</button>
+        <button class="mode-btn" data-ocr-mode="structured">Examen estructurado (Vision IA)</button>
+      </div>
+
+      <!-- Modo simple (Tesseract) -->
+      <div class="ocr-pane active" id="ocr-simple">
+        <div class="grid">
+          <article class="card">
+            <h2>Imagen del examen</h2>
+            <p class="muted small">
+              Pensado para una pregunta + respuesta con texto impreso (o
+              manuscrito muy claro). Usa los literales <code>Pregunta:</code> y
+              <code>Respuesta:</code> para que el parser separe bien.
+            </p>
+            <label class="field file-field">
+              <span>Sube la foto o el escaneo</span>
+              <input type="file" id="ocr-image" accept="image/*">
+            </label>
+            <div class="preview-wrap">
+              <img id="ocr-preview" alt="" class="hidden">
+            </div>
+            <div class="actions">
+              <button class="primary" id="btn-ocr">Extraer texto</button>
+            </div>
+          </article>
+
+          <article class="card hidden" id="ocr-result">
+            <h2>Texto extraído</h2>
+            <h3>Pregunta detectada</h3>
+            <p class="extracted" id="ocr-question"></p>
+            <h3>Respuesta detectada</h3>
+            <p class="extracted" id="ocr-answer"></p>
+            <details>
+              <summary>Texto crudo del OCR</summary>
+              <pre id="ocr-raw"></pre>
+            </details>
+            <div class="actions">
+              <button class="primary" id="btn-send-to-grade">Enviar a corrección</button>
+              <button class="ghost" id="btn-export-docx">📥 Descargar como Word (.docx)</button>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Modo estructurado (Vision IA) -->
+      <div class="ocr-pane" id="ocr-structured">
+        <article class="card">
+          <h2>Examen estructurado con Vision IA</h2>
+          <p class="muted small">
+            Para tablas (formulación, completar huecos), exámenes mixtos
+            o cualquier cosa que Tesseract no entiende. Usa Claude Vision para
+            extraer celdas, identificar qué escribió el alumno y qué venía
+            impreso. Requiere <code>ANTHROPIC_API_KEY</code>.
+          </p>
+          <div class="alert" style="background:var(--primary-soft);border-color:var(--primary);color:var(--text)">
+            <strong>Arquitectura:</strong> Claude Vision solo extrae el contenido visual.
+            La corrección se hace después con el grader determinista
+            (comparación normalizada + fuzzy + sinónimos del profesor).
+            Mantenemos interpretabilidad en el juicio.
+          </div>
+          <label class="field file-field">
+            <span>Sube la foto del examen</span>
+            <input type="file" id="ocr-vision-image" accept="image/*">
+          </label>
+          <div class="preview-wrap">
+            <img id="ocr-vision-preview" alt="" class="hidden">
+          </div>
+          <label class="field">
+            <span>Asignatura (ayuda a la IA a contextualizar)</span>
+            <input type="text" id="ocr-vision-subject" value="Química" placeholder="Química, Matemáticas, Historia...">
+          </label>
+          <div class="actions">
+            <button class="primary ai" id="btn-vision-extract">
+              <span>✨</span> Extraer estructura
+            </button>
+          </div>
+        </article>
+
+        <article class="card hidden" id="vision-result-card">
+          <div class="dashboard-head">
+            <div>
+              <h2 id="vision-title">Estructura extraída</h2>
+              <p class="muted small" id="vision-instructions"></p>
+            </div>
+            <div class="actions" style="margin-top:0">
+              <button class="ghost ai" id="btn-vision-solutions">
+                <span>✨</span> Generar correcciones con IA
+              </button>
+              <button class="primary" id="btn-vision-grade">Corregir</button>
+            </div>
+          </div>
+          <p class="muted small">
+            Edita cualquier celda antes de corregir. Las verdes son texto
+            impreso del examen (no se evalúan), las azules son del alumno, las
+            amarillas son huecos que dejó vacíos. La columna "Correcta" la
+            puedes rellenar tú o generar con IA.
+          </p>
+          <div class="table-wrap">
+            <table class="cases-table structured-table" id="vision-table">
+              <thead id="vision-thead"></thead>
+              <tbody id="vision-tbody"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card hidden" id="vision-grade-card">
+          <h2>Resultado de la corrección</h2>
+          <div class="score-block">
+            <div class="score-big" id="vision-score">—</div>
+            <div class="score-info">
+              <div class="score-bar"><div class="score-fill" id="vision-fill"></div></div>
+              <p class="feedback" id="vision-feedback"></p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="cases-table">
+              <thead>
+                <tr><th>Fila</th><th>Columna</th><th>Alumno</th><th>Correcta</th><th>Veredicto</th><th>Puntos</th></tr>
+              </thead>
+              <tbody id="vision-grade-tbody"></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ────────────── TAB: Aula del Profesor ────────────── -->
+    <section class="tab-panel" id="tab-teacher">
+      <div class="teacher-intro">
+        <h2>Aula del Profesor</h2>
+        <p class="muted">
+          Tres componentes para que la corrección se ajuste al criterio del
+          docente sin entrenar modelos: generación asistida de rúbrica,
+          calibración por ejemplos (in-context learning) y personalización
+          léxica del grader determinista.
+        </p>
+      </div>
+
+      <nav class="subnav" id="teacher-subnav">
+        <button class="subnav-btn active" data-sub="ai">Asistente IA</button>
+        <button class="subnav-btn" data-sub="calibrate">Calibración con ejemplos</button>
+        <button class="subnav-btn" data-sub="lexicon">Sinónimos y antipatrones</button>
+        <button class="subnav-btn" data-sub="steps">Mates/Física <span class="badge experimental">exp</span></button>
+      </nav>
+
+      <!-- Sub: Asistente IA -->
+      <div class="sub-pane active" id="sub-ai">
+        <div class="grid">
+          <article class="card">
+            <h2>Pregunta del examen</h2>
+            <label class="field">
+              <span>Enunciado</span>
+              <input type="text" id="ai-question" placeholder="¿Qué es la fotosíntesis y dónde ocurre?">
+            </label>
+            <div class="two-col">
+              <label class="field">
+                <span>Asignatura</span>
+                <input type="text" id="ai-subject" value="Biología">
+              </label>
+              <label class="field">
+                <span>Nivel educativo</span>
+                <input type="text" id="ai-level" value="Bachillerato">
+              </label>
+            </div>
+            <label class="checkbox">
+              <input type="checkbox" id="ai-force">
+              <span>Forzar regeneración (ignorar caché)</span>
+            </label>
+            <div class="actions">
+              <button class="primary ai" id="btn-ai-generate">
+                <span>✨</span> Generar referencia
+              </button>
+            </div>
+            <p class="muted small">
+              Llama a Claude vía <code>reference_db.py</code>. Si la pregunta
+              ya está cacheada se devuelve sin coste; útil para iterar.
+            </p>
+          </article>
+
+          <article class="card hidden" id="ai-result-card">
+            <h2>Propuesta de la IA</h2>
+            <h3>Respuesta ideal</h3>
+            <p class="extracted" id="ai-ideal"></p>
+            <h3>Conceptos clave</h3>
+            <div class="concepts" id="ai-concepts"></div>
+            <h3>Errores frecuentes (sugerencias para antipatrones)</h3>
+            <ul id="ai-mistakes" class="bullet-list"></ul>
+            <div class="actions">
+              <button class="primary" id="btn-ai-use">Usar en Corregir</button>
+              <button class="ghost" id="btn-ai-copy-mistakes">Crear antipatrones con estos errores</button>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Sub: Calibración -->
+      <div class="sub-pane" id="sub-calibrate">
+        <div class="grid">
+          <article class="card">
+            <h2>1 · Define la pregunta</h2>
+            <label class="field">
+              <span>Pregunta</span>
+              <input type="text" id="cal-question" placeholder="¿Qué es la mitocondria?">
+            </label>
+            <label class="field">
+              <span>Respuesta ideal</span>
+              <textarea id="cal-ideal" rows="3"></textarea>
+            </label>
+            <label class="field">
+              <span>Conceptos clave (<code>concepto:peso</code>)</span>
+              <textarea id="cal-concepts" rows="3"></textarea>
+            </label>
+          </article>
+
+          <article class="card">
+            <div class="dashboard-head">
+              <h2>2 · Ejemplos del profesor</h2>
+              <div class="actions" style="margin-top:0">
+                <button class="ghost" id="btn-cal-load-db">Cargar de BD</button>
+                <button class="ghost" id="btn-cal-save-db">Guardar todos en BD</button>
+              </div>
+            </div>
+            <p class="muted small">
+              La calibración <strong>determinista (sin IA)</strong> necesita
+              <strong>≥2 ejemplos</strong>; la de Claude, ≥1. Se pueden guardar en
+              BD SQLite del servidor indexados por pregunta para reusar entre sesiones.
+            </p>
+            <div id="cal-examples-list" class="examples-list"></div>
+            <div class="example-form">
+              <textarea id="cal-new-answer" rows="2" placeholder="Respuesta de ejemplo del alumno..."></textarea>
+              <div class="example-add">
+                <input type="number" id="cal-new-score" min="0" max="10" step="0.5" placeholder="Nota 0-10">
+                <button class="ghost" id="btn-cal-add">Añadir ejemplo</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>3 · Respuesta a evaluar</h2>
+            <textarea id="cal-student" rows="4" placeholder="Pega aquí la nueva respuesta a corregir..."></textarea>
+            <div class="actions">
+              <button class="primary ai" id="btn-cal-run">
+                <span>✨</span> Calibrar y comparar
+              </button>
+            </div>
+          </article>
+
+          <article class="card result-card hidden" id="cal-result-card">
+            <h2>Comparativa</h2>
+            <div class="compare-scores">
+              <div class="score-card">
+                <span class="score-card-label">Grader (sin calibrar)</span>
+                <span class="score-card-value" id="cal-score-grader">—</span>
+              </div>
+              <div class="score-card highlight">
+                <span class="score-card-label">Calibrado (determinista, sin IA)</span>
+                <span class="score-card-value" id="cal-score-cal">—</span>
+              </div>
+              <div class="score-card">
+                <span class="score-card-label">Claude (estilo profesor)</span>
+                <span class="score-card-value" id="cal-score-llm">—</span>
+              </div>
+            </div>
+
+            <h3 class="section-title">Calibración determinista (sin IA)</h3>
+            <p class="muted small" id="cal-mapping">—</p>
+            <p class="muted small" id="cal-cal-note"></p>
+            <div class="table-wrap">
+              <table class="cases-table">
+                <thead>
+                  <tr><th>Ejemplo del profesor</th><th>Nota prof.</th><th>Grader</th><th>Calibrado</th></tr>
+                </thead>
+                <tbody id="cal-fit-tbody"></tbody>
+              </table>
+            </div>
+
+            <h3 class="section-title">Razonamiento de Claude</h3>
+            <p class="extracted" id="cal-reasoning">—</p>
+            <h3 class="section-title">Detalle del grader</h3>
+            <div class="concept-lists">
+              <div class="concept-col detected">
+                <h4>Detectados</h4><ul id="cal-list-detected"></ul>
+              </div>
+              <div class="concept-col missing">
+                <h4>Faltantes</h4><ul id="cal-list-missing"></ul>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- Sub: Sinónimos y antipatrones -->
+      <div class="sub-pane" id="sub-lexicon">
+        <div class="grid">
+          <article class="card">
+            <h2>Sinónimos del profesor</h2>
+            <p class="muted small">
+              El grader trata como equivalentes el término canónico y sus
+              variantes en cualquier respuesta. Ejemplo:
+              <code>variable</code> ↔ <code>identificador, var</code>.
+            </p>
+            <div id="syn-list" class="lex-list"></div>
+            <div class="lex-form">
+              <input type="text" id="syn-canonical" placeholder="Término canónico (p.ej. variable)">
+              <input type="text" id="syn-variants" placeholder="Variantes separadas por coma">
+              <button class="ghost" id="btn-syn-add">Añadir</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>Antipatrones</h2>
+            <p class="muted small">
+              Si la respuesta del alumno contiene una frase prohibida asociada
+              a un concepto presente en la rúbrica, la nota se multiplica por
+              el factor de penalización (0 a 1).
+            </p>
+            <div id="ap-list" class="lex-list"></div>
+            <div class="lex-form">
+              <input type="text" id="ap-concept" placeholder="Concepto (p.ej. mitocondria)">
+              <input type="text" id="ap-forbidden" placeholder="Frases prohibidas separadas por coma">
+              <input type="number" id="ap-penalty" min="0" max="1" step="0.05" value="0.5">
+              <button class="ghost" id="btn-ap-add">Añadir</button>
+            </div>
+          </article>
+
+          <article class="card" style="grid-column: 1/-1">
+            <div class="dashboard-head">
+              <h2>Configuración persistida en el servidor</h2>
+              <div class="actions" style="margin-top:0">
+                <button class="primary" id="btn-lex-save">Guardar cambios</button>
+                <button class="ghost" id="btn-lex-reload">Recargar del servidor</button>
+              </div>
+            </div>
+            <p class="muted small">
+              Se almacena en <code>data/teacher_config.json</code> y afecta a
+              todas las correcciones a partir del próximo grade.
+            </p>
+          </article>
+        </div>
+      </div>
+
+      <!-- Sub: Mates/Física experimental -->
+      <div class="sub-pane" id="sub-steps">
+        <div class="alert alert-warning">
+          <strong>⚠ Función experimental.</strong> Esta corrección delega 100 %
+          en Claude y NO es interpretable como el grader principal. Está fuera
+          del alcance core del TFG (la memoria menciona explícitamente que la
+          corrección paso-a-paso de ejercicios cuantitativos es línea futura).
+          Trátala como demostración o segunda opinión, nunca como nota oficial.
+        </div>
+        <div class="grid">
+          <article class="card">
+            <h2>Ejercicio</h2>
+            <div class="two-col">
+              <label class="field">
+                <span>Asignatura</span>
+                <select id="steps-subject">
+                  <option>Matemáticas</option>
+                  <option>Física</option>
+                  <option>Química</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Puntos totales</span>
+                <input type="number" id="steps-max" min="1" max="20" step="0.5" value="10">
+              </label>
+            </div>
+            <label class="field">
+              <span>Enunciado completo (con apartados a, b, c…)</span>
+              <textarea id="steps-question" rows="4" placeholder="a) Calcula la velocidad inicial...&#10;b) Calcula el tiempo de caída usando v0 del apartado a..."></textarea>
+            </label>
+            <label class="field">
+              <span>Respuesta del alumno (puede incluir cálculos paso a paso)</span>
+              <textarea id="steps-answer" rows="6" placeholder="Apartado a: v0 = sqrt(2gh) = sqrt(2·9.8·5) = 9.9 m/s&#10;Apartado b: t = v0/g = 9.9/9.8 = 1.01 s"></textarea>
+            </label>
+            <div class="actions">
+              <button class="primary ai" id="btn-steps-grade">
+                <span>✨</span> Corregir paso a paso
+              </button>
+            </div>
+          </article>
+
+          <article class="card result-card hidden" id="steps-result-card">
+            <div class="score-block">
+              <div class="score-big" id="steps-score">—</div>
+              <div class="score-info">
+                <div class="score-bar"><div class="score-fill" id="steps-fill"></div></div>
+                <p class="feedback" id="steps-summary"></p>
+              </div>
+            </div>
+            <div class="alert alert-warning hidden" id="steps-carry"></div>
+            <h3 class="section-title">Detalle por apartado</h3>
+            <div class="table-wrap">
+              <table class="cases-table">
+                <thead>
+                  <tr><th>Apartado</th><th>OK</th><th>Puntos</th><th>Observación</th></tr>
+                </thead>
+                <tbody id="steps-tbody"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────── TAB: Dashboard ────────────── -->
+    <section class="tab-panel" id="tab-dashboard">
+      <article class="card">
+        <div class="dashboard-head">
+          <div>
+            <h2>Validación del sistema</h2>
+            <p class="muted small">
+              Reproduce el comportamiento de <code>src/validate.py</code>
+              sobre el grader en memoria (con teacher_config aplicado).
+            </p>
+          </div>
+          <button class="primary" id="btn-validate">Ejecutar 40 casos</button>
+        </div>
+
+        <div id="dashboard-body" class="hidden">
+          <div class="stats">
+            <div class="stat"><span class="stat-num" id="stat-pass">—</span><span class="stat-label">PASS</span></div>
+            <div class="stat"><span class="stat-num" id="stat-expected">—</span><span class="stat-label">FAIL esperado</span></div>
+            <div class="stat danger"><span class="stat-num" id="stat-unexpected">—</span><span class="stat-label">FAIL inesperado</span></div>
+            <div class="stat highlight"><span class="stat-num" id="stat-conformant">—</span><span class="stat-label">% conforme</span></div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="chart-card">
+              <h3>Conformidad global</h3>
+              <div class="chart-wrap"><canvas id="chart-donut"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <h3>Por asignatura</h3>
+              <div class="chart-wrap"><canvas id="chart-subject"></canvas></div>
+            </div>
+          </div>
+
+          <h3 class="section-title">Por tema</h3>
+          <div class="chart-wrap chart-tall"><canvas id="chart-topic"></canvas></div>
+
+          <h3 class="section-title">Detalle de casos</h3>
+          <div class="table-wrap">
+            <table class="cases-table">
+              <thead>
+                <tr><th>ID</th><th>Asignatura</th><th>Tema</th><th>Descripción</th><th>Nota</th><th>Rango</th><th>Estado</th></tr>
+              </thead>
+              <tbody id="cases-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="dashboard-head">
+          <div>
+            <h2>Concordancia con el profesor (correlación)</h2>
+            <p class="muted small">
+              Corrige un conjunto de respuestas con <strong>nota humana de
+              referencia</strong> y mide si el sistema las <em>ordena</em> y
+              aproxima como un profesor. Notas humanas asignadas por el autor
+              según rúbrica (no de un tribunal real).
+            </p>
+          </div>
+          <button class="primary" id="btn-correlation">Calcular correlación</button>
+        </div>
+
+        <div id="correlation-body" class="hidden">
+          <div class="stats">
+            <div class="stat highlight"><span class="stat-num" id="stat-spearman">—</span><span class="stat-label">Spearman ρ (orden)</span></div>
+            <div class="stat"><span class="stat-num" id="stat-pearson">—</span><span class="stat-label">Pearson r</span></div>
+            <div class="stat"><span class="stat-num" id="stat-mae">—</span><span class="stat-label">MAE (/10)</span></div>
+            <div class="stat"><span class="stat-num" id="stat-rmse">—</span><span class="stat-label">RMSE (/10)</span></div>
+            <div class="stat"><span class="stat-num" id="stat-corr-n">—</span><span class="stat-label">N respuestas</span></div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="chart-card">
+              <h3>Humano vs. sistema</h3>
+              <div class="chart-wrap"><canvas id="chart-scatter"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <h3>Spearman por pregunta</h3>
+              <div class="chart-wrap"><canvas id="chart-perq"></canvas></div>
+            </div>
+          </div>
+
+          <p class="muted small" id="correlation-note"></p>
+        </div>
+      </article>
+    </section>
+
+    <!-- ────────────── TAB: Historial ────────────── -->
+    <section class="tab-panel" id="tab-history">
+      <article class="card">
+        <div class="dashboard-head">
+          <div>
+            <h2>Historial de correcciones</h2>
+            <p class="muted small">
+              Se guarda en el navegador (localStorage). Persiste entre recargas
+              pero es local a este equipo.
+            </p>
+          </div>
+          <button class="ghost" id="btn-clear-history">Vaciar historial</button>
+        </div>
+
+        <div id="history-empty" class="empty-state">
+          <div class="empty-icon">🕓</div>
+          <p>Aún no has corregido nada en esta sesión.</p>
+          <button class="primary" data-go="grade">Corregir mi primera respuesta</button>
+        </div>
+
+        <ul id="history-list" class="history-list hidden"></ul>
+      </article>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <span>tfg_exam_grader · <a href="/api/docs">API docs</a></span>
+      <span class="muted">FastAPI + Tesseract + Claude + SemanticGrader</span>
+    </div>
+  </footer>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

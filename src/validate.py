@@ -1,5 +1,5 @@
 """
-validate.py — 22 test cases for the semantic grading system.
+validate.py — 35 test cases for the semantic grading system.
 
 Run from the src/ directory:
     python validate.py
@@ -8,8 +8,10 @@ Or from the project root:
     python src/validate.py
 
 Prints each case with its score, expected range, and PASS/FAIL.
-Finishes with total passed and accuracy percentage.
+Termina con resultados globales y desglose por tema y asignatura.
 """
+
+from collections import defaultdict
 
 from ai.models import ReferenceAnswer
 from ai.semantic_grader import SemanticGrader
@@ -17,11 +19,17 @@ from ai.semantic_grader import SemanticGrader
 
 # ── Helper ────────────────────────────────────────────────────────────────────
 
-def _ref(question: str, ideal_answer: str, key_concepts: list) -> ReferenceAnswer:
+def _ref(
+    question: str,
+    ideal_answer: str,
+    key_concepts: list,
+    subject: str = "Biología",
+    education_level: str = "Bachillerato",
+) -> ReferenceAnswer:
     return ReferenceAnswer(
         question=question,
-        subject="Biología",
-        education_level="Bachillerato",
+        subject=subject,
+        education_level=education_level,
         expected_answer_type="respuesta_corta",
         ideal_answer=ideal_answer,
         key_concepts=key_concepts,
@@ -92,6 +100,86 @@ _REF_CELULA_VEGETAL = _ref(
         {"concept": "centríolo",       "weight": 0.15},
         {"concept": "celulosa",        "weight": 0.15},
     ],
+)
+
+# ── Referencias de Informática (universitario) ───────────────────────────────
+#
+# El synonym_map del grader está cargado con vocabulario de biología
+# (producir, energía, célula, ATP…). Para Informática los conceptos clave se
+# eligen entre términos que el alumno va a escribir literalmente o que el
+# matcher fuzzy (SequenceMatcher ≥ 0.80) puede asimilar. Evitar tokens
+# demasiado cortos o ambiguos ("dato", "valor" solo) porque generan
+# falsos positivos al estar en cualquier respuesta.
+
+_REF_VARIABLE = _ref(
+    question="¿Qué es una variable en programación y qué características tiene?",
+    ideal_answer=(
+        "Una variable es un espacio en memoria identificado con un nombre que "
+        "almacena un valor de un tipo determinado y cuyo contenido puede "
+        "modificarse durante la ejecución del programa."
+    ),
+    key_concepts=[
+        {"concept": "memoria", "weight": 0.30},
+        {"concept": "nombre",  "weight": 0.20},
+        {"concept": "valor",   "weight": 0.25},
+        {"concept": "tipo",    "weight": 0.25},
+    ],
+    subject="Informática",
+    education_level="Universitario",
+)
+
+_REF_COMPLEJIDAD = _ref(
+    question="¿Qué es la complejidad temporal de un algoritmo?",
+    ideal_answer=(
+        "La complejidad temporal mide el tiempo de ejecución de un algoritmo "
+        "en función del tamaño de la entrada. Se expresa habitualmente con la "
+        "notación Big-O para describir su comportamiento asintótico en el peor caso."
+    ),
+    key_concepts=[
+        {"concept": "tiempo",      "weight": 0.25},
+        {"concept": "entrada",     "weight": 0.20},
+        {"concept": "asintótico",  "weight": 0.30},
+        {"concept": "peor caso",   "weight": 0.25},
+    ],
+    subject="Informática",
+    education_level="Universitario",
+)
+
+_REF_HTTP = _ref(
+    question="¿Qué es el protocolo HTTP y para qué se utiliza?",
+    ideal_answer=(
+        "HTTP es un protocolo de la capa de aplicación que define cómo se "
+        "comunican clientes y servidores web mediante peticiones y respuestas. "
+        "Se utiliza para transferir recursos hipertexto en la World Wide Web."
+    ),
+    key_concepts=[
+        {"concept": "protocolo", "weight": 0.20},
+        {"concept": "cliente",   "weight": 0.25},
+        {"concept": "servidor",  "weight": 0.25},
+        {"concept": "petición",  "weight": 0.30},
+    ],
+    subject="Informática",
+    education_level="Universitario",
+)
+
+_REF_CLAVE_PRIMARIA = _ref(
+    question="¿Qué es una clave primaria en una base de datos relacional?",
+    ideal_answer=(
+        "Una clave primaria es un campo o conjunto de campos que identifica "
+        "de forma única cada fila de una tabla. Debe ser un valor único, no "
+        "nulo y estable a lo largo del tiempo."
+    ),
+    key_concepts=[
+        {"concept": "única",   "weight": 0.30},
+        {"concept": "tabla",   "weight": 0.20},
+        {"concept": "fila",    "weight": 0.25},
+        # La restricción es NOT NULL: el concepto correcto es "no nulo", no "nulo"
+        # a secas. Así el detector de polaridad distingue "no puede ser nulo"
+        # (correcto) de "puede ser nulo" (incorrecto), en vez de premiar a ambos.
+        {"concept": "no nulo", "weight": 0.25},
+    ],
+    subject="Informática",
+    education_level="Universitario",
 )
 
 
@@ -422,10 +510,282 @@ TEST_CASES = [
         "nota_min": 0.0,
         "nota_max": 2.0,
     },
+
+    # ── Variable / Programación (4 casos) ───────────────────────────────────
+
+    {
+        "id": 23,
+        "topic": "Variable",
+        "desc": "Respuesta completa (los 4 conceptos)",
+        "reference": _REF_VARIABLE,
+        "student_answer": (
+            "Una variable es una zona de memoria identificada por un nombre "
+            "que guarda un valor de un tipo concreto."
+        ),
+        # memoria ✓  nombre ✓  valor ✓  tipo ✓ → concept_ratio=1.0
+        "nota_min": 8.0,
+        "nota_max": 10.0,
+    },
+    {
+        "id": 24,
+        "topic": "Variable",
+        "desc": "Respuesta parcial (sin tipo)",
+        "reference": _REF_VARIABLE,
+        "student_answer": (
+            "Una variable es un espacio en memoria con un nombre asociado "
+            "donde podemos guardar valores."
+        ),
+        # memoria ✓  nombre ✓  valor ✓  tipo ✗ → concept_ratio=0.75 → floor=0.6
+        "nota_min": 5.5,
+        "nota_max": 8.5,
+    },
+    {
+        "id": 25,
+        "topic": "Variable",
+        "desc": "Vocabulario adyacente (datos/contenedor en lugar de los términos técnicos)",
+        "reference": _REF_VARIABLE,
+        "student_answer": (
+            "Una variable es como un contenedor donde se pueden meter datos "
+            "y reutilizarlos a lo largo del programa."
+        ),
+        # ningún concepto literal: "contenedor"≠memoria, "datos"≠valor,
+        # "tipo" y "nombre" no aparecen → concept_ratio≈0
+        "nota_min": 0.0,
+        "nota_max": 3.0,
+    },
+    {
+        "id": 26,
+        "topic": "Variable",
+        "desc": "Respuesta trivial",
+        "reference": _REF_VARIABLE,
+        "student_answer": "Una variable es algo que se usa en programación.",
+        # ningún concepto técnico → concept_ratio=0
+        "nota_min": 0.0,
+        "nota_max": 2.0,
+    },
+
+    # ── Complejidad temporal / Algoritmos (3 casos) ─────────────────────────
+
+    {
+        "id": 27,
+        "topic": "Complejidad temporal",
+        "desc": "Respuesta completa (los 4 conceptos)",
+        "reference": _REF_COMPLEJIDAD,
+        "student_answer": (
+            "La complejidad temporal mide el tiempo de ejecución de un algoritmo "
+            "en función del tamaño de la entrada. Se expresa con notación Big-O "
+            "para caracterizar el peor caso asintótico."
+        ),
+        # tiempo ✓  entrada ✓  asintótico ✓  peor caso ✓ → concept_ratio=1.0
+        "nota_min": 8.0,
+        "nota_max": 10.0,
+    },
+    {
+        "id": 28,
+        "topic": "Complejidad temporal",
+        "desc": "Respuesta parcial (sin notación asintótica ni peor caso)",
+        "reference": _REF_COMPLEJIDAD,
+        "student_answer": (
+            "La complejidad temporal es el tiempo que tarda un algoritmo "
+            "en función del tamaño de los datos de entrada."
+        ),
+        # tiempo ✓  entrada ✓  asintótico ✗  peor caso ✗ → concept_ratio=0.45
+        "nota_min": 2.5,
+        "nota_max": 5.5,
+    },
+    {
+        "id": 29,
+        "topic": "Complejidad temporal",
+        "desc": "Vocabulario alternativo correcto pero sin los términos exactos de la rúbrica",
+        "reference": _REF_COMPLEJIDAD,
+        "student_answer": (
+            "La complejidad temporal es la cantidad de operaciones que ejecuta "
+            "un algoritmo conforme aumenta el tamaño de la entrada. Suele "
+            "expresarse con la O grande del peor caso."
+        ),
+        # "operaciones"≠tiempo (sequencematcher bajo), entrada ✓, peor caso ✓,
+        # asintótico ✗ ("O grande" no matchea) → concept_ratio≈0.45
+        # Caso ilustrativo: respuesta técnicamente correcta penalizada por
+        # falta de literalidad. Sin synonym_map para "tiempo"/"operaciones".
+        "nota_min": 3.0,
+        "nota_max": 6.0,
+    },
+
+    # ── HTTP / Redes (3 casos) ──────────────────────────────────────────────
+
+    {
+        "id": 30,
+        "topic": "HTTP",
+        "desc": "Respuesta completa (los 4 conceptos)",
+        "reference": _REF_HTTP,
+        "student_answer": (
+            "HTTP es un protocolo de la capa de aplicación usado por los "
+            "clientes y servidores web para intercambiar peticiones y "
+            "respuestas con los recursos hipertexto."
+        ),
+        # protocolo ✓  cliente ✓  servidor ✓  petición ✓ → concept_ratio=1.0
+        "nota_min": 8.0,
+        "nota_max": 10.0,
+    },
+    {
+        "id": 31,
+        "topic": "HTTP",
+        "desc": "Respuesta parcial (omite el modelo cliente-servidor)",
+        "reference": _REF_HTTP,
+        "student_answer": (
+            "HTTP es el protocolo que define el formato de las peticiones "
+            "que viajan por Internet para cargar páginas web."
+        ),
+        # protocolo ✓  petición ✓  cliente ✗  servidor ✗ → concept_ratio=0.50
+        "nota_min": 3.0,
+        "nota_max": 6.0,
+    },
+    {
+        "id": 32,
+        "topic": "HTTP",
+        "desc": "Respuesta trivial",
+        "reference": _REF_HTTP,
+        "student_answer": "HTTP es algo de Internet que sirve para que las webs funcionen.",
+        # ningún concepto técnico → concept_ratio=0
+        "nota_min": 0.0,
+        "nota_max": 2.0,
+    },
+
+    # ── Clave primaria / Bases de datos (3 casos) ───────────────────────────
+
+    {
+        "id": 33,
+        "topic": "Clave primaria",
+        "desc": "Respuesta completa (los 4 conceptos)",
+        "reference": _REF_CLAVE_PRIMARIA,
+        "student_answer": (
+            "La clave primaria es uno o varios campos que identifican de forma "
+            "única cada fila de una tabla, y no pueden tener valor nulo."
+        ),
+        # única ✓  tabla ✓  fila ✓  nulo ✓ → concept_ratio=1.0
+        "nota_min": 8.0,
+        "nota_max": 10.0,
+    },
+    {
+        "id": 34,
+        "topic": "Clave primaria",
+        "desc": "Respuesta parcial (sin la restricción NOT NULL)",
+        "reference": _REF_CLAVE_PRIMARIA,
+        "student_answer": (
+            "La clave primaria es un atributo de una tabla que identifica "
+            "de manera única cada fila."
+        ),
+        # única ✓  tabla ✓  fila ✓  nulo ✗ → concept_ratio=0.75 → floor=0.6
+        "nota_min": 5.5,
+        "nota_max": 8.5,
+    },
+    {
+        "id": 35,
+        "topic": "Clave primaria",
+        "desc": "Respuesta trivial",
+        "reference": _REF_CLAVE_PRIMARIA,
+        "student_answer": "La clave primaria es algo muy importante en las bases de datos.",
+        # ningún concepto técnico → concept_ratio=0
+        "nota_min": 0.0,
+        "nota_max": 2.0,
+    },
+
+    # ── Robustez: NEGACIÓN y polaridad (5 casos) ─────────────────────────────
+    # El grader detecta presencia de conceptos; estos casos comprueban que
+    # ANTES de acreditarlos analiza la polaridad, para no premiar respuestas
+    # que niegan lo correcto ni castigar negaciones legítimas de otra cosa.
+    {
+        "id": 36,
+        "topic": "Negación",
+        "desc": "Niega los conceptos correctos (debe suspender pese a las palabras)",
+        "reference": _REF_MITOCONDRIA,
+        "student_answer": (
+            "La mitocondria NO produce energía ni ATP y tampoco realiza la "
+            "respiración celular; de eso se encarga el núcleo."
+        ),
+        # Todos los conceptos aparecen pero NEGADOS → no se acreditan.
+        "nota_min": 0.0,
+        "nota_max": 3.5,
+    },
+    {
+        "id": 37,
+        "topic": "Negación",
+        "desc": "Atribución correcta con negación de OTRO orgánulo (no debe penalizar)",
+        "reference": _REF_MITOCONDRIA,
+        "student_answer": (
+            "A diferencia del cloroplasto, que no hace la respiración, la "
+            "mitocondria sí produce energía en forma de ATP mediante la "
+            "respiración celular."
+        ),
+        # La negación recae sobre el cloroplasto, no sobre los conceptos → ALTA.
+        "nota_min": 8.0,
+        "nota_max": 10.0,
+    },
+    {
+        "id": 38,
+        "topic": "Negación",
+        "desc": "Construcción enfática 'no solo ... sino' (no es negación)",
+        "reference": _REF_MITOCONDRIA,
+        "student_answer": (
+            "La mitocondria no solo produce energía, sino que genera ATP "
+            "mediante la respiración celular en el orgánulo."
+        ),
+        "nota_min": 8.0,
+        "nota_max": 10.0,
+    },
+    {
+        "id": 39,
+        "topic": "Negación",
+        "desc": "Restricción NOT NULL correcta ('no nulo' es la respuesta buena)",
+        "reference": _REF_CLAVE_PRIMARIA,
+        "student_answer": (
+            "Una clave primaria identifica de forma única cada fila de una "
+            "tabla y su valor no puede ser nulo."
+        ),
+        "nota_min": 8.0,
+        "nota_max": 10.0,
+    },
+    {
+        "id": 40,
+        "topic": "Negación",
+        "desc": "Afirma que SÍ puede ser nulo (incorrecto: no debe acreditar 'no nulo')",
+        "reference": _REF_CLAVE_PRIMARIA,
+        "student_answer": (
+            "Una clave primaria identifica cada fila de una tabla de forma "
+            "única y puede tener valor nulo sin problema."
+        ),
+        # 'no nulo' no se acredita (afirma lo contrario) → 3 de 4 conceptos.
+        # El grader determinista no la castiga MÁS por la afirmación falsa (eso
+        # corresponde al verificador LLM opcional); solo no le da ese concepto,
+        # por lo que queda por debajo de la respuesta completa (caso 39).
+        "nota_min": 4.0,
+        "nota_max": 8.0,
+    },
 ]
 
 
 # ── Runner ────────────────────────────────────────────────────────────────────
+
+def _empty_bucket() -> dict:
+    return {"pass": 0, "expected_fail": 0, "unexpected_fail": 0, "total": 0}
+
+
+def _print_breakdown(title: str, buckets: dict, label_width: int) -> None:
+    print("=" * 72)
+    print(f"  {title}")
+    print("=" * 72)
+    for key in sorted(buckets):
+        b = buckets[key]
+        conformant = b["pass"] + b["expected_fail"]
+        pct = conformant / b["total"] * 100 if b["total"] else 0.0
+        line = (
+            f"  {key:<{label_width}}  "
+            f"{b['pass']:>2} PASS · {b['expected_fail']} esperado · "
+            f"{b['unexpected_fail']} inesperado  "
+            f"({conformant}/{b['total']}, {pct:3.0f}%)"
+        )
+        print(line)
+
 
 def run_validation() -> None:
     grader = SemanticGrader()
@@ -434,9 +794,12 @@ def run_validation() -> None:
     unexpected_fails = 0
     total = len(TEST_CASES)
 
+    per_topic = defaultdict(_empty_bucket)
+    per_subject = defaultdict(_empty_bucket)
+
     print("=" * 72)
     print(f"{'VALIDATE — Sistema de Corrección Semántica':^72}")
-    print(f"{'22 casos · Biología básica':^72}")
+    print(f"{'35 casos · Biología y Informática':^72}")
     print("=" * 72)
 
     for case in TEST_CASES:
@@ -448,12 +811,22 @@ def run_validation() -> None:
         if ok:
             tag = "PASS ✓"
             passed += 1
+            bucket_key = "pass"
         elif expected_to_fail:
             tag = "FAIL esperado ⚠"
             expected_fails += 1
+            bucket_key = "expected_fail"
         else:
             tag = "FAIL ✗"
             unexpected_fails += 1
+            bucket_key = "unexpected_fail"
+
+        topic = case["topic"]
+        subject = case["reference"].subject
+        per_topic[topic][bucket_key] += 1
+        per_topic[topic]["total"] += 1
+        per_subject[subject][bucket_key] += 1
+        per_subject[subject]["total"] += 1
 
         snippet = case["student_answer"]
         if len(snippet) > 65:
@@ -476,9 +849,18 @@ def run_validation() -> None:
     conformant = passed + expected_fails
     pct = conformant / total * 100
     verdict = "OK" if unexpected_fails == 0 else f"{unexpected_fails} fallo(s) inesperado(s)"
+
+    topic_width = max(len(k) for k in per_topic)
+    subject_width = max(len(k) for k in per_subject)
+
+    print("\n")
+    _print_breakdown("ACCURACY POR TEMA", per_topic, topic_width)
+    print()
+    _print_breakdown("ACCURACY POR ASIGNATURA", per_subject, subject_width)
+
     print("\n" + "=" * 72)
     print(
-        f"  {passed} PASS · {expected_fails} FAIL esperado · "
+        f"  TOTAL: {passed} PASS · {expected_fails} FAIL esperado · "
         f"{unexpected_fails} FAIL inesperado  ·  "
         f"{pct:.0f}% comportamiento conforme  ·  {verdict}"
     )
