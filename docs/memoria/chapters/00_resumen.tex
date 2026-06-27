@@ -1,0 +1,25 @@
+\chapter*{Resumen}
+\addcontentsline{toc}{chapter}{Resumen}
+
+La corrección de preguntas abiertas es una de las tareas más costosas de la evaluación académica, porque obliga a interpretar texto libre y a distinguir entre respuestas correctas, parciales y conceptualmente erróneas. Este trabajo presenta el diseño y desarrollo de un sistema automático que corrige este tipo de preguntas a partir de imágenes de exámenes, organizado como un \emph{pipeline} que integra reconocimiento óptico de caracteres, separación de pregunta y respuesta, una respuesta de referencia y un módulo de evaluación semántica que combina conceptos clave ponderados, similitud global y control de longitud.
+
+El núcleo del sistema es deliberadamente determinista e interpretable: la nota se puede justificar señalando qué conceptos aparecen, cuáles faltan y por qué. Sobre esa base se han incorporado cuatro mejoras que responden a limitaciones observadas durante las pruebas: un análisis de polaridad que evita acreditar conceptos negados o mal atribuidos, sinónimos por concepto que reconocen paráfrasis válidas, un verificador de factualidad opcional basado en un modelo de lenguaje que actúa como segunda opinión sin reescribir la nota, y una capa de calibración que ajusta la escala del sistema al criterio de cada corrector.
+
+La validación no se limita a casos aislados. Se ha construido una batería de prueba determinista, un banco de exámenes conceptuales que cubre desde Primaria hasta Máster, y una validación con datos reales corregidos por profesores (el conjunto de Mohler). Sobre el banco propio, el sistema concuerda con la calificación de referencia con una correlación de Spearman de $\rho \approx 0{,}93$ y un error medio inferior a un punto sobre diez; sobre datos externos en inglés y sin rúbrica curada, el rendimiento desciende a $\rho \approx 0{,}54$, y se demuestra que ese desfase es sobre todo de escala y se corrige con la capa de calibración. Estos resultados delimitan con números cuándo el corrector es fiable y cuándo necesita la intervención del profesor.
+
+\vspace{0.8cm}
+\noindent\textbf{Palabras clave:} corrección automática, preguntas abiertas, evaluación semántica, OCR, conceptos clave, correlación de Spearman, calibración, interpretabilidad.
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+Grading open-ended questions is one of the most time-consuming tasks in academic assessment, since it requires interpreting free text and telling apart correct, partial and conceptually wrong answers. This project presents the design and development of an automatic system that grades such questions from exam images, structured as a pipeline that integrates optical character recognition, question–answer separation, a reference answer and a semantic evaluation module combining weighted key concepts, global similarity and a length control.
+
+The core of the system is deliberately deterministic and interpretable: every grade can be justified by stating which concepts are present, which are missing and why. On top of that core, four improvements address limitations observed during testing: a polarity analysis that prevents crediting negated or misattributed concepts; per-concept synonyms that recognise valid paraphrases; an optional large-language-model factuality verifier that acts as a second opinion without overwriting the grade; and a calibration layer that adjusts the system scale to each grader's criterion.
+
+Validation goes beyond isolated cases. A deterministic test suite, a bank of conceptual exams spanning from primary school to a master's degree, and a validation against real teacher-graded data (the Mohler dataset) were built. On the in-house bank the system agrees with the reference grade with a Spearman correlation of $\rho \approx 0.93$ and a mean error below one point out of ten; on external English data without a curated rubric, performance drops to $\rho \approx 0.54$, and this gap is shown to be mostly a matter of scale, which the calibration layer corrects. These results quantify when the grader is reliable and when it still needs the teacher.
+
+\vspace{0.8cm}
+\noindent\textbf{Keywords:} automatic grading, open-ended questions, semantic evaluation, OCR, key concepts, Spearman correlation, calibration, interpretability.
+
+\clearpage

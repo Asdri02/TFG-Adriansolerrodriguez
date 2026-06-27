@@ -1,0 +1,164 @@
+\appendix
+\chapter{Anexos}
+
+\section{Fórmula de cálculo y componentes de la nota}
+
+Para facilitar la consulta, se resume aquí el significado de cada término que interviene en el cálculo de la nota final:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \texttt{concept\_ratio}: proporción de conceptos clave detectados, ponderados por importancia. Es la señal principal.
+  \item \texttt{similarity}: similitud del coseno entre la respuesta y la referencia, acotada entre 0 y 1. Señal secundaria, con peso 0{,}05.
+  \item \texttt{length\_penalty}: factor multiplicativo asociado a la longitud; reduce la nota solo cuando la respuesta es demasiado corta.
+  \item \texttt{min\_floor}: suelo mínimo aplicable cuando \texttt{concept\_ratio} indica comprensión suficiente, que blinda la nota frente a degradaciones posteriores.
+\end{itemize}
+
+\section{Ejemplo de configuración de una pregunta con sinónimos}
+
+El siguiente fragmento ilustra cómo se declara una pregunta con conceptos ponderados y sinónimos por concepto, tal como los consume el corrector. Los sinónimos permiten acreditar una paráfrasis sin renunciar a la trazabilidad.
+
+\begin{lstlisting}[style=pycode]
+key_concepts = [
+    {"concept": "LIFO", "weight": 0.4,
+     "synonyms": ["último en entrar primero en salir",
+                  "último en meter primero en sacar"]},
+    {"concept": "push", "weight": 0.2, "synonyms": ["apilar"]},
+    {"concept": "pop",  "weight": 0.2, "synonyms": ["desapilar"]},
+    {"concept": "lineal", "weight": 0.2},
+]
+\end{lstlisting}
+
+\section{Salida de la batería de validación}
+
+La batería de validación informa, por cada caso, de la nota obtenida y de si cae dentro de la banda esperada, y agrega los resultados por tema y por asignatura. A continuación se reproduce, de forma abreviada, el formato de su salida.
+
+\begin{lstlisting}[style=terminal]
+[33] Clave primaria | Respuesta completa (los 4 conceptos)
+     Nota: 9.84  (rango esperado 8.0-10.0)  -> PASS
+[36] Negación | Niega los conceptos correctos
+     Nota: 0.29  (rango esperado 0.0-3.5)   -> PASS
+...
+ACCURACY POR ASIGNATURA
+  Biología     22/22 (100%)
+  Informática  15/15 (100%)
+TOTAL: 39 PASS - 1 FAIL esperado - 0 FAIL inesperado - OK
+\end{lstlisting}
+
+\section{Detalle de la concordancia por asignatura}
+
+La tabla~\ref{tab:porasig} recoge el error absoluto medio por asignatura y nivel en el banco de exámenes, con la versión final del sistema. Permite ver que las mayores desviaciones se concentran en asignaturas donde las respuestas de aprobado tienden a ser más libres en su formulación.
+
+\begin{table}[ht]
+\centering
+\caption{Error absoluto medio (MAE, sobre 10) por asignatura en el banco por niveles.}
+\label{tab:porasig}
+\footnotesize
+\begin{tabular}{llc}
+\toprule
+Nivel & Asignatura & MAE \\
+\midrule
+Primaria & Lengua & 0{,}43 \\
+Primaria & Matemáticas & 1{,}40 \\
+Primaria & Ciencias Naturales & 1{,}10 \\
+Primaria & Ciencias Sociales & 1{,}16 \\
+Primaria & Inglés & 0{,}36 \\
+ESO & Lengua & 1{,}05 \\
+ESO & Matemáticas & 0{,}12 \\
+ESO & Biología y Geología & 0{,}90 \\
+ESO & Física y Química & 0{,}67 \\
+ESO & Geografía e Historia & 0{,}95 \\
+ESO & Inglés & 0{,}80 \\
+ESO & Tecnología & 1{,}05 \\
+Bachillerato & Biología & 1{,}45 \\
+Bachillerato & Física & 0{,}57 \\
+Bachillerato & Química & 0{,}90 \\
+Bachillerato & Matemáticas & 1{,}14 \\
+Bachillerato & Historia de España & 0{,}95 \\
+Bachillerato & Filosofía & 1{,}90 \\
+Bachillerato & Economía & 1{,}10 \\
+Universidad & Programación & 1{,}42 \\
+Universidad & Estructuras de Datos & 1{,}30 \\
+Universidad & Algoritmia & 0{,}90 \\
+Universidad & Bases de Datos & 0{,}78 \\
+Universidad & Redes & 1{,}20 \\
+Universidad & Sistemas Operativos & 1{,}30 \\
+Universidad & Arquitectura & 1{,}02 \\
+Universidad & Inteligencia Artificial & 1{,}10 \\
+Máster & Machine Learning & 1{,}20 \\
+Máster & Sistemas Distribuidos & 1{,}19 \\
+Máster & Ciberseguridad & 1{,}00 \\
+Máster & Big Data & 0{,}41 \\
+Máster & Cloud Computing & 0{,}90 \\
+Máster & Proc. del Lenguaje Natural & 1{,}00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Implementación de la correlación de Spearman}
+
+La correlación de Spearman se ha implementado como la correlación de Pearson sobre los rangos de cada serie, con promediado de empates, sin recurrir a bibliotecas externas:
+
+\begin{lstlisting}[style=pycode]
+def spearman(x, y):
+    return pearson(rangos_promediados(x), rangos_promediados(y))
+\end{lstlisting}
+
+\section{Instalación y puesta en marcha}
+
+El sistema se distribuye como un proyecto Python con sus dependencias declaradas. Para su ejecución se requiere un entorno virtual con las bibliotecas indicadas y la instalación de Tesseract en el sistema operativo. La batería de validación y los experimentos se ejecutan directamente desde la línea de órdenes, y la aplicación web se levanta con un servidor ASGI. Las funciones que dependen de un modelo de lenguaje requieren configurar una clave de servicio en una variable de entorno; en su ausencia, el sistema sigue funcionando en su modo determinista. Esta separación entre lo que necesita conexión y lo que no es deliberada: garantiza que el corrector básico pueda usarse en un aula sin depender de ningún servicio externo.
+
+\section{Implementación de la calibración isotónica}
+
+La calibración isotónica se ha implementado mediante el algoritmo de \emph{pool adjacent violators}, que ajusta una función creciente por tramos fusionando los bloques que violan la monotonía. A continuación se muestra, de forma resumida, su idea:
+
+\begin{lstlisting}[style=pycode]
+# Ordenar por nota del grader y fusionar bloques no monótonos
+para cada par (cruda, profesor) ordenado por 'cruda':
+    crear un bloque con valor = profesor
+    mientras el bloque anterior tenga media mayor que el actual:
+        fusionar ambos bloques (media ponderada)
+# La función resultante es monótona: no altera el orden (Spearman)
+\end{lstlisting}
+
+\section{Glosario de términos}
+
+\begin{description}[leftmargin=2em,style=nextline]
+  \item[OCR] Reconocimiento óptico de caracteres; conversión de una imagen de texto en texto digital.
+  \item[concept\_ratio] Proporción ponderada de conceptos clave detectados respecto al total de la rúbrica.
+  \item[Polaridad] Análisis de si un concepto se afirma o se niega en la respuesta del alumno.
+  \item[Sinónimo por concepto] Paráfrasis que el profesor acepta como equivalente a un término de la rúbrica.
+  \item[Verificador] Componente opcional que, mediante un modelo de lenguaje, señala posibles contradicciones o atribuciones erróneas sin reescribir la nota.
+  \item[Calibración] Ajuste monótono de la escala de notas del sistema a la de un corrector concreto.
+  \item[Spearman ($\rho$)] Coeficiente de correlación de orden entre dos series de notas.
+  \item[MAE] Error absoluto medio entre la nota del sistema y la de referencia.
+  \item[LIFO] \emph{Last In, First Out}; política de una pila en la que el último elemento en entrar es el primero en salir.
+\end{description}
+
+\section{Endpoints principales de la aplicación web}
+
+La aplicación expone, entre otros, los siguientes puntos de entrada: corrección individual y por lotes, validación, correlación con notas de referencia, calibración determinista y con modelo de lenguaje, verificación de factualidad, OCR y extracción estructurada de imágenes. Las funciones que dependen de un modelo de lenguaje requieren una clave de servicio y, en su ausencia, devuelven un error controlado sin afectar al resto de la aplicación.
+
+\section{Capturas de la aplicación}
+\label{anx:capturas}
+
+Se recogen aquí las pantallas de la aplicación web no incluidas en el cuerpo de la memoria. La figura~\ref{fig:web-landing} es la página de inicio, que presenta el sistema y da acceso a las distintas funciones. La figura~\ref{fig:web-aula} muestra el ``aula del profesor'', desde donde se generan rúbricas, se calibra con ejemplos y se gestionan los sinónimos. La figura~\ref{fig:web-calibracion} muestra la calibración con ejemplos: para una nueva respuesta se comparan la nota cruda del grader, la calibrada de forma determinista y, si hay un modelo disponible, la que predice Claude, junto al mapeo lineal aprendido y la tabla de ajuste.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.85\textwidth]{web_landing.png}
+\caption{Página de inicio de la aplicación web.}
+\label{fig:web-landing}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.92\textwidth]{web_aula.png}
+\caption{``Aula del profesor'': asistente de rúbricas, calibración con ejemplos y gestión de sinónimos y antipatrones.}
+\label{fig:web-aula}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\textwidth]{web_calibracion.png}
+\caption{Calibración con ejemplos. Para una nueva respuesta se comparan la nota cruda del grader (9{,}87), la calibrada de forma determinista (9{,}23) y la de Claude (9{,}00), junto al mapeo lineal aprendido y la tabla de ajuste sobre los ejemplos.}
+\label{fig:web-calibracion}
+\end{figure}

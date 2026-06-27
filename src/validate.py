@@ -1,5 +1,5 @@
 """
-validate.py — 35 test cases for the semantic grading system.
+validate.py — 40 test cases for the semantic grading system.
 
 Run from the src/ directory:
     python validate.py
@@ -799,7 +799,7 @@ def run_validation() -> None:
 
     print("=" * 72)
     print(f"{'VALIDATE — Sistema de Corrección Semántica':^72}")
-    print(f"{'35 casos · Biología y Informática':^72}")
+    print(f"{f'{total} casos · Biología y Informática':^72}")
     print("=" * 72)
 
     for case in TEST_CASES:

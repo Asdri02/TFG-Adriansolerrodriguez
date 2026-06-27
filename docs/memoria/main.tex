@@ -1,0 +1,130 @@
+\documentclass[12pt,a4paper]{report}
+
+% --- Codificación e idioma ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla,es-nodecimaldot]{babel}
+\usepackage{mathptmx} % Times New Roman para texto y matemáticas
+
+% --- Matemáticas y tablas ---
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+
+% --- Gráficos, código y color ---
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{caption}
+
+% --- Geometría e interlineado (formato memoria UNIE) ---
+\usepackage{geometry}
+\geometry{a4paper,top=2.5cm,bottom=2.5cm,left=3cm,right=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+
+% --- Bibliografía APA (autor-año) con apacite + bibtex, localización ES ---
+% (alternativa a biblatex/biber: biber no es compatible con la versión de
+%  biblatex incluida en el compilador; apacite usa bibtex y localiza con babel.)
+% apacite se carga ANTES de hyperref para evitar el conflicto \@year@.
+\usepackage[natbibapa]{apacite}   % compatibilidad natbib (convive con hyperref)
+\let\textcite\citet   % autor (año)
+\let\parencite\citep  % (autor, año)
+\renewcommand{\bibname}{Referencias}
+
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\setlength{\parskip}{0.6\baselineskip}
+\renewcommand{\contentsname}{Índice general}
+
+% --- Estilo de listados de código/terminal ---
+\definecolor{codebg}{RGB}{28,28,28}
+\definecolor{codefg}{RGB}{235,235,235}
+\definecolor{kwcolor}{RGB}{120,170,255}
+\lstdefinestyle{terminal}{
+  basicstyle=\ttfamily\footnotesize\color{codefg},
+  backgroundcolor=\color{codebg},
+  frame=single,
+  framerule=0pt,
+  rulecolor=\color{codebg},
+  xleftmargin=4pt,
+  xrightmargin=4pt,
+  aboveskip=0.8\baselineskip,
+  belowskip=0.5\baselineskip,
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  showstringspaces=false,
+  inputencoding=utf8,
+  extendedchars=true,
+  literate=
+    {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+    {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+    {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {ü}{{\"u}}1 {Ü}{{\"U}}1
+    {¿}{{?`}}1 {¡}{{!`}}1 {ρ}{{$\rho$}}1 {≈}{{$\approx$}}1
+}
+\lstdefinestyle{pycode}{
+  style=terminal,
+  backgroundcolor=\color{white},
+  basicstyle=\ttfamily\footnotesize\color{black},
+  frame=single,
+  rulecolor=\color{black!30},
+}
+
+\begin{document}
+
+% ======================= PORTADA =======================
+\begin{titlepage}
+  \centering
+  \vspace*{1cm}
+  {\scshape\large Universidad UNIE\par}
+  {\scshape Grado en Ingeniería Informática\par}
+  \vspace{2.2cm}
+  {\Large\bfseries Trabajo de Fin de Grado\par}
+  \vspace{1.2cm}
+  \rule{\linewidth}{0.4pt}\par\vspace{0.5cm}
+  {\LARGE\bfseries Sistema automático de corrección de preguntas abiertas a partir de imágenes de exámenes\par}
+  \vspace{0.5cm}
+  \rule{\linewidth}{0.4pt}\par
+  \vspace{2.2cm}
+  \begin{flushright}
+    \begin{tabular}{rl}
+      \textbf{Autor:} & Adrián Soler Rodríguez\\[0.3cm]
+      \textbf{Tutor:} & [Nombre del tutor]\\[0.3cm]
+      \textbf{Curso académico:} & 2025--2026\\[0.3cm]
+      \textbf{Convocatoria:} & Ordinaria\\
+    \end{tabular}
+  \end{flushright}
+  \vfill
+  {\large Madrid, 2026\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\setcounter{page}{2}
+
+\input{chapters/00_resumen}
+
+\tableofcontents
+\clearpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{chapters/01_introduccion}
+\input{chapters/02_estado_arte}
+\input{chapters/03_metodologia}
+\input{chapters/04_resultados}
+\input{chapters/045_consideraciones}
+\input{chapters/05_conclusiones}
+\input{chapters/06_anexos}
+\input{chapters/07_referencias}
+
+\end{document}

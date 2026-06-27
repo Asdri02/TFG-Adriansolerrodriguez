@@ -1,0 +1,20 @@
+\chapter{Consideraciones éticas, legales y de sostenibilidad}
+\label{cap:consideraciones}
+
+Un sistema que interviene en la calificación de exámenes afecta a personas, así que conviene revisar sus implicaciones éticas, legales y de sostenibilidad, varias de las cuales han condicionado decisiones de diseño concretas.
+
+\section{Transparencia y papel del docente}
+
+La decisión más relevante en términos éticos es que cada nota pueda explicarse: una calificación que es una caja negra resulta difícil de defender ante una reclamación. Aquí la nota se descompone en los conceptos detectados, los ausentes y los negados, y la capa basada en un modelo de lenguaje se limita a verificar, sin reescribir la calificación. Coherente con ello, la herramienta se concibe como apoyo y no como sustituto: ordena y propone, pero la última palabra es del docente, lo que evita delegar en una máquina una responsabilidad —evaluar a una persona— que debe seguir siendo humana.
+
+\section{Sesgos y limitaciones}
+
+Todo sistema de evaluación automática puede introducir sesgos, y conviene ser explícito sobre ellos. El corrector premia la presencia de una terminología concreta, lo que podría perjudicar a alumnos que expresan ideas correctas con otro vocabulario; los sinónimos por concepto mitigan ese efecto, pero dependen de que el profesor los declare. Además, la dependencia del OCR implica que la calidad de la letra o del escaneo puede influir en la nota, un factor ajeno al conocimiento del alumno. Por eso la salida debe entenderse como una propuesta revisable, especialmente en decisiones con consecuencias académicas importantes.
+
+\section{Protección de datos}
+
+Los exámenes contienen datos personales, por lo que su tratamiento queda sujeto al Reglamento General de Protección de Datos. El diseño favorece el cumplimiento: la corrección funciona de forma local, sin enviar información a servicios externos, y solo las funciones opcionales basadas en un modelo de lenguaje implican comunicación con un tercero, claramente acotadas y prescindibles. En un despliegue real convendría minimizar los datos enviados, anonimizar las respuestas cuando sea posible e informar a los implicados del tratamiento.
+
+\section{Sostenibilidad}
+
+El coste computacional del corrector es muy bajo: una corrección no requiere inferencia sobre un modelo grande, sino operaciones de texto sencillas, con un consumo energético reducido frente a una solución que dependiera de un modelo de lenguaje para cada calificación. Reservar ese modelo para funciones acotadas limita el impacto energético, un criterio cada vez más relevante en el diseño de software.

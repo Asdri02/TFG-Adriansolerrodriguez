@@ -1,0 +1,310 @@
+\chapter{Metodología y desarrollo}
+\label{cap:metodologia}
+
+\section{Arquitectura del sistema}
+
+El sistema se ha diseñado como un \emph{pipeline} secuencial en el que cada módulo transforma la salida del anterior y prepara la información necesaria para la siguiente etapa. Esta organización simplifica el mantenimiento, facilita la depuración y permite evaluar el impacto de cada fase por separado.
+
+De forma resumida, el flujo de trabajo puede expresarse así:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item Recepción de la imagen del examen.
+  \item Preprocesamiento para mejorar legibilidad y contraste.
+  \item Extracción de texto mediante OCR.
+  \item Separación lógica entre pregunta y respuesta.
+  \item Generación de una respuesta ideal de referencia.
+  \item Evaluación semántica de la respuesta del alumno.
+  \item Cálculo de nota final y generación de \emph{feedback}.
+\end{enumerate}
+
+La figura~\ref{fig:pipeline} representa este flujo de forma esquemática.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+  node distance=0.55cm and 0.7cm,
+  box/.style={draw,rounded corners,align=center,font=\footnotesize,
+              minimum height=1cm,minimum width=2.5cm,fill=blue!5},
+  io/.style={draw,align=center,font=\footnotesize,minimum height=1cm,
+             minimum width=2.5cm,fill=gray!10},
+  arr/.style={-{Stealth[length=2mm]}}]
+  \node[io] (img) {Imagen del\\examen};
+  \node[box,right=of img] (pre) {Preproc.\\(opcional)};
+  \node[box,right=of pre] (ocr) {OCR\\(Tesseract)};
+  \node[box,below=of ocr] (parse) {Parseo\\preg./resp.};
+  \node[box,left=of parse] (ref) {Respuesta\\ideal};
+  \node[box,left=of ref] (sem) {Evaluación\\semántica};
+  \node[io,below=of sem] (out) {Nota +\\feedback};
+  \draw[arr] (img) -- (pre);
+  \draw[arr] (pre) -- (ocr);
+  \draw[arr] (ocr) -- (parse);
+  \draw[arr] (parse) -- (ref);
+  \draw[arr] (ref) -- (sem);
+  \draw[arr] (sem) -- (out);
+\end{tikzpicture}
+\caption{Esquema del \emph{pipeline} de corrección. Cada bloque transforma la salida del anterior, lo que permite localizar el origen de un error.}
+\label{fig:pipeline}
+\end{figure}
+
+Esta arquitectura responde a un criterio de modularidad. Cada bloque tiene una responsabilidad clara y puede mejorarse de forma independiente. Por ejemplo, si en futuras versiones se desea sustituir el OCR por un motor más robusto o incorporar un modelo semántico más avanzado, la estructura general del sistema seguiría siendo válida. Además, la segmentación en fases ayuda a identificar la procedencia de los errores: si la nota resultante es incoherente, puede analizarse si el problema viene de una mala lectura OCR, de un parseo incorrecto o de una valoración semántica demasiado rígida. Esta capacidad de trazabilidad es importante en un sistema de evaluación, donde no basta con obtener un resultado: también es necesario entender de dónde sale.
+
+El sistema se ha implementado en Python, organizando el código en paquetes según su responsabilidad: un módulo de OCR (\texttt{ocr/}), un módulo de inteligencia o evaluación (\texttt{ai/}) que contiene el corrector semántico y los componentes asociados, y una capa de aplicación web (\texttt{web/}) que expone la funcionalidad mediante una interfaz. El corrector semántico vive en \texttt{ai/semantic\_grader.py} y el modelo de datos en \texttt{ai/models.py}.
+
+\subsection{Organización del código}
+
+El código se estructura en paquetes con responsabilidades bien diferenciadas, lo que refleja la separación lógica del \emph{pipeline}. La tabla~\ref{tab:modulos} resume los componentes principales. Esta organización facilita que cada parte se pruebe de forma aislada y que una mejora —por ejemplo, en la detección de conceptos— no obligue a tocar el resto del sistema.
+
+\begin{table}[ht]
+\centering
+\caption{Componentes principales del código y su responsabilidad.}
+\label{tab:modulos}
+\small
+\begin{tabularx}{\textwidth}{>{\ttfamily}l >{\raggedright\arraybackslash}X}
+\toprule
+\normalfont Módulo & Responsabilidad \\
+\midrule
+ocr/ & Extracción de texto de la imagen y separación pregunta/respuesta \\
+ai/semantic\_grader.py & Corrector semántico: conceptos, polaridad, sinónimos, nota \\
+ai/answer\_checker.py & Corrector numérico (Matemáticas y Física) por equivalencia \\
+ai/verifier.py & Verificación de factualidad como segunda opinión \\
+ai/calibration.py & Calibración de la escala (lineal e isotónica) \\
+ai/metrics.py & Métricas de concordancia (Spearman, Pearson, MAE) \\
+ai/models.py & Modelo de datos de la pregunta y la rúbrica \\
+web/ & Aplicación web (API y frontend) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Planificación y fases del proyecto}
+
+El proyecto se abordó en fases sucesivas, cada una construida sobre la anterior y cerrada cuando sus pruebas pasaban de forma estable. En una primera fase se montó el \emph{pipeline} base —captura, OCR, parseo y una evaluación por conceptos sencilla— para tener cuanto antes un sistema funcional de extremo a extremo, aunque fuera limitado. La segunda fase se centró en la evaluación semántica: la fórmula de la nota, los conceptos ponderados, el suelo mínimo y la penalización por longitud, ajustados a partir de los problemas observados en pruebas reales.
+
+La tercera fase, ya con el núcleo estable, abordó la robustez: el análisis de polaridad, los sinónimos por concepto y el verificador, cada uno motivado por un fallo concreto detectado al probar el sistema con respuestas difíciles. La cuarta fase fue la de validación cuantitativa, en la que se construyeron el banco de exámenes, los conjuntos de prueba y la comparación con datos reales, lo que a su vez motivó la calibración. En paralelo a todo el proceso se desarrolló la aplicación web, que sirvió tanto de demostración como de banco de pruebas manual. Este orden no fue casual: cada capa nueva se apoyaba en que la anterior estuviera verificada, lo que permitió razonar sobre los efectos de cada cambio de forma aislada.
+
+\section{Requisitos del sistema}
+
+Antes de describir la implementación conviene fijar los requisitos que se han considerado, distinguiendo entre los funcionales —qué debe hacer el sistema— y los no funcionales —cómo debe comportarse—.
+
+Entre los requisitos funcionales principales se encuentran los siguientes: aceptar como entrada una imagen de examen y extraer de ella el texto; separar la pregunta de la respuesta; disponer de una respuesta de referencia con conceptos clave ponderados; calcular una nota a partir de la cobertura conceptual, la similitud global y la longitud; generar una retroalimentación que indique los conceptos presentes, parciales y ausentes; no acreditar conceptos negados; reconocer paráfrasis declaradas por el profesor; señalar posibles contradicciones mediante una verificación opcional; permitir calibrar la escala de notas a partir de ejemplos; y ofrecer una interfaz para corregir respuestas individuales y por lotes, así como para validar el sistema.
+
+Entre los requisitos no funcionales destacan la interpretabilidad —toda nota debe poder explicarse en términos de sus componentes—, la reproducibilidad —el núcleo de corrección es determinista—, la robustez ante errores leves de OCR, la independencia de servicios externos para la funcionalidad básica, y un coste computacional reducido. Estos requisitos no funcionales han tenido un peso decisivo en el diseño: son los que justifican mantener un núcleo determinista y reservar el modelo de lenguaje para funciones acotadas, en lugar de delegar en él toda la corrección.
+
+\section{Entrada y preprocesamiento de imagen}
+
+La entrada del sistema es una imagen que contiene el enunciado de la pregunta y la respuesta del alumno. Como la calidad de la imagen condiciona directamente el OCR, durante el desarrollo se implementó y evaluó una etapa de preprocesamiento previa a la extracción de texto. Esa etapa incluía las operaciones habituales en este tipo de tareas: realce de canal de color para resaltar la tinta frente al fondo, binarización o aplicación de umbral, suavizado y limpieza de ruido, y recorte de la región de texto.
+
+Sin embargo, al contrastar estas operaciones sobre las imágenes reales de prueba, el resultado no fue el esperado. Una binarización agresiva tendía a deformar caracteres, romper uniones entre letras y, en algunos casos, hacer desaparecer términos relevantes para la corrección. Es decir, el preprocesamiento que sobre el papel debía ayudar acababa degradando la lectura precisamente en las palabras que más importan para la evaluación posterior.
+
+A la vista de ese comportamiento, la decisión de diseño fue prescindir del preprocesamiento agresivo en el camino de extracción definitivo: el sistema ejecuta Tesseract directamente sobre la imagen, conservando el contraste real del documento, y mantiene como apoyo un recorte opcional de la zona de texto. Las rutinas de binarización y realce no se descartan por completo, sino que se conservan como herramientas de inspección y depuración. Esta elección no contradice la importancia de la calidad de entrada, sino que la matiza: conviene priorizar la legibilidad real del documento de partida antes que confiar en una limpieza posterior que, según se comprobó, no siempre suma.
+
+\section{Módulo OCR}
+
+El reconocimiento óptico de caracteres se resuelve mediante Tesseract, integrado a través de la biblioteca \texttt{pytesseract}. La elección se debe a varios factores: es una solución consolidada, suficientemente flexible para prototipos avanzados y compatible con un flujo de procesamiento personalizado, y permite trabajar sin entrenar desde cero un modelo específico.
+
+El OCR transforma una imagen en una representación textual sobre la que ya pueden aplicarse técnicas de análisis. Esta conversión es un punto crítico porque cualquier error se propaga al resto del \emph{pipeline}: si una palabra clave aparece deformada, puede dejar de detectarse; si la segmentación del texto falla, la separación entre pregunta y respuesta también puede verse afectada. Por ese motivo, la evaluación del OCR no debe hacerse solo en términos de precisión de caracteres, sino atendiendo a su impacto funcional, es decir, a si el texto extraído conserva suficiente información para permitir una evaluación razonable.
+
+\begin{lstlisting}[style=terminal]
+--- OCR ---
+Pregunta detectada: ¿Cuál es la función de la mitocondria?
+Respuesta detectada: La mitocondria produce energía para la célula.
+\end{lstlisting}
+
+\section{Parseo de pregunta y respuesta}
+
+Una vez extraído el texto, el sistema necesita identificar qué parte corresponde al enunciado y cuál constituye la respuesta del alumno. Esta fase es menos visible que el OCR o la evaluación, pero resulta esencial. Si la separación falla, el sistema podría comparar la respuesta contra una referencia incorrecta o introducir fragmentos del propio enunciado dentro de la evaluación.
+
+El parseo se basa en reglas de estructuración adaptadas al formato esperado del documento. La idea no es resolver cualquier maquetación posible, sino trabajar con un esquema reconocible en el que existan marcas textuales, patrones o posiciones que permitan distinguir ambas partes. Este enfoque es coherente con el alcance del proyecto: prioriza la fiabilidad en un contexto controlado frente a una generalidad difícil de sostener.
+
+\section{Generación de respuesta ideal}
+
+El sistema incorpora una respuesta ideal de referencia que actúa como base de comparación. En la versión inicial esta respuesta se generaba de forma controlada como un componente \emph{mock}: no pretendía ser una solución universal generada de manera autónoma, sino una representación esperada del contenido correcto en el contexto de la evaluación. Esa decisión respondía a una razón metodológica: para estudiar la evaluación semántica conviene disponer de una referencia estable, de modo que no se mezclen dos problemas distintos —crear la respuesta correcta y evaluar la del alumno—.
+
+Posteriormente se implementó un generador de referencias respaldado por un modelo de lenguaje (\texttt{reference\_db.py}), que produce la respuesta ideal y los conceptos clave para una pregunta dada, valida que la salida sea un JSON correcto y guarda el resultado en una caché local para no repetir llamadas. El generador \emph{mock} se conserva para las pruebas que deben ejecutarse sin conexión. En ambos casos, la respuesta ideal no se concibe como un texto rígido que deba coincidir literalmente con la del estudiante, sino como respuesta de referencia y fuente de conceptos esenciales.
+
+\begin{lstlisting}[style=terminal]
+Respuesta ideal: La mitocondria es un orgánulo celular encargado de
+producir energía en forma de ATP mediante la respiración celular.
+Conceptos clave: [('mitocondria', 1.0), ('energía', 1.0),
+('ATP', 0.5), ('respiración celular', 0.5)]
+\end{lstlisting}
+
+\section{Evaluación semántica}
+
+\subsection{Planteamiento general}
+
+La evaluación semántica es el componente central del sistema porque convierte el texto extraído por OCR en una nota continua y en una clasificación de evidencias. En la implementación realizada no se aplica una comparación libre entre dos textos completos, sino un procedimiento mixto en el que primero se detectan conceptos relevantes y después se utiliza una medida de similitud global como señal secundaria. Esta decisión responde a una necesidad práctica: cuando la entrada procede de OCR, una parte de los errores no proviene del contenido del alumno, sino de pequeñas deformaciones en el texto reconocido. Si la nota dependiera en exceso de la similitud global, esos errores tendrían un impacto desproporcionado.
+
+El sistema parte de una respuesta ideal de referencia y de una lista de conceptos clave asociados a pesos. A partir de esa información, la respuesta del alumno se analiza en tres niveles: detección de conceptos, cálculo de similitud global y ajuste por longitud. El resultado final no pretende reproducir una rúbrica docente completa, pero sí ofrecer una puntuación estable, interpretable y suficientemente robusta ante variaciones de redacción.
+
+\subsection{Detección de conceptos clave}
+
+El primer paso consiste en localizar en la respuesta del alumno los conceptos definidos como relevantes. La implementación no trabaja únicamente con coincidencias exactas, sino con una lógica de detección en varios niveles: coincidencia directa del concepto completo, coincidencia por presencia de todos sus tokens —ampliada con un mapa de sinónimos— y coincidencia parcial aproximada tolerante a pequeños errores de OCR mediante una medida de similitud entre cadenas.
+
+Como resultado, cada concepto queda clasificado en una de tres categorías: \textbf{detectado} (aparece de forma suficiente y recibe el peso completo), \textbf{parcial} (se reconoce una parte significativa, pero no con el nivel necesario para considerarlo plenamente cubierto, y aporta media puntuación) y \textbf{ausente} (no se detecta evidencia suficiente). Esta clasificación no solo sirve para calcular la nota: también es la base del \emph{feedback}, ya que permite indicar qué ideas están presentes, cuáles aparecen de forma incompleta y cuáles faltan.
+
+\subsection{Concepto, similitud y longitud}
+
+Una vez clasificados los conceptos, el sistema calcula \texttt{concept\_ratio}, la proporción de contenido cubierto, como la suma ponderada de los conceptos detectados (más la mitad del peso de los parciales) respecto al peso total de la pregunta. No mide cuántos conceptos aparecen, sino cuánta parte del contenido importante ha sido realmente cubierta. Es la señal principal del sistema, porque en preguntas abiertas cortas la presencia de conceptos correctos es el indicador más estable de comprensión.
+
+La similitud global, \texttt{similarity}, se calcula como la similitud del coseno entre las bolsas de palabras de la respuesta y de la referencia, y toma un valor entre 0 y 1. En la práctica, cada texto se representa como un vector de frecuencias de palabras tras una normalización que pasa a minúsculas, elimina acentos y signos, y separa en \emph{tokens}; la similitud es el coseno del ángulo entre ambos vectores. Así, dos respuestas que comparten gran parte del vocabulario relevante obtienen un valor alto aunque cambien el orden de las palabras, mientras que respuestas con vocabularios disjuntos quedan cerca de 0. Esta medida, sencilla y sin dependencias, basta para el papel secundario que se le asigna. Actúa como señal complementaria, con un peso deliberadamente pequeño, para suavizar situaciones límite sin convertirse en el criterio dominante. El factor \texttt{length\_penalty} corrige la nota en función de la longitud: cuando la respuesta entra en el rango esperado se mantiene cerca de 1, y cuando es demasiado corta la reduce, situándose en torno a 0{,}7--0{,}8 en respuestas claramente escasas. La penalización actúa únicamente en sentido descendente: la brevedad insuficiente resta, pero la extensión por sí misma no penaliza, porque una respuesta larga que cubre la rúbrica no es peor que una breve que también lo hace.
+
+\subsection{Suelo mínimo y fórmula de la nota}
+
+La implementación incorpora un umbral inferior, \texttt{min\_floor}, que introduce una nota mínima cuando el sistema detecta comprensión básica suficiente, típicamente cuando \texttt{concept\_ratio} alcanza o supera 0{,}6. Esto evita que pequeñas oscilaciones en la similitud o en la longitud hundan una respuesta que ya demuestra conocimiento. La nota final se calcula así:
+
+\begin{equation}
+\mathrm{Nota} = \max\!\Big(\mathrm{min\_floor},\;\big(0{,}95\cdot\mathrm{concept\_ratio} + 0{,}05\cdot\mathrm{similarity}\big)\cdot\mathrm{length\_penalty}\Big)\cdot 10
+\end{equation}
+
+La distribución 0{,}95 / 0{,}05 responde al comportamiento buscado: el contenido conceptual debe dominar la nota porque es la señal más interpretable y la menos sensible a reformulaciones, mientras que la similitud solo aporta un ajuste fino. El orden de las operaciones es deliberado: la penalización por longitud se aplica primero, sobre la combinación de concepto y similitud, y solo después se compara con el suelo mediante el operador máximo. De este modo, una vez la respuesta demuestra comprensión, la nota no cae por debajo de \texttt{min\_floor} por ningún motivo, ni por una similitud baja ni por una redacción breve. Si el suelo se aplicara antes, la penalización podría volver a hundir la nota por debajo del umbral, anulando su efecto protector.
+
+\subsection{Modelo de datos y asistente de rúbricas}
+
+La información de cada pregunta se representa mediante una estructura (\texttt{ReferenceAnswer}) que agrupa el enunciado, la asignatura, el nivel educativo, la respuesta ideal y la lista de conceptos clave con sus pesos y, opcionalmente, sus sinónimos. Esta representación es el contrato que comparten todos los componentes: el corrector, la batería de validación, el banco de exámenes y la API trabajan sobre el mismo modelo, lo que evita inconsistencias y facilita reutilizar una misma pregunta en distintos contextos.
+
+Construir buenas rúbricas es trabajoso, por lo que la aplicación incluye un asistente que, a partir de una pregunta, propone una respuesta ideal y un conjunto de conceptos clave ponderados mediante un modelo de lenguaje. El profesor puede aceptar la propuesta, editarla o descartarla; el sistema no la aplica de forma automática. Este asistente reduce la barrera de entrada sin comprometer el control humano sobre los criterios de corrección, y se apoya en el mismo modelo de datos descrito.
+
+\section{Robustez frente a la negación: análisis de polaridad}
+\label{sec:polaridad}
+
+Un detector de conceptos que solo comprueba presencia tiene un punto ciego grave: no distingue entre afirmar un concepto y negarlo. Durante las pruebas se comprobó que una respuesta de biología completamente falsa, ``la mitocondria \emph{no} produce ATP ni realiza la respiración celular; eso lo hace el núcleo'', obtenía una nota cercana al 9{,}8 sobre 10, simplemente porque contenía los términos esperados. Para un corrector, ese comportamiento es inadmisible: premia a quien suelta las palabras clave aunque niegue todo.
+
+Para corregirlo se incorporó un análisis de \emph{polaridad} previo a la acreditación de cada concepto. Antes de contar un concepto como detectado, el sistema comprueba si aparece dentro del alcance de una negación en su misma cláusula. La respuesta se divide en cláusulas a partir de la puntuación y de ciertas conjunciones, y dentro de cada cláusula se busca, antes de la posición del concepto, un marcador de negación. La lista de negadores se ha mantenido deliberadamente conservadora —``no'', ``ni'', ``nunca'', ``tampoco'', ``jamás'', los cuantificadores ``ningún/ninguna'' y locuciones como ``en lugar de'' o ``en vez de''— porque el peor error de un corrector es castigar una respuesta correcta. Por eso se excluyen casos ambiguos: la construcción enfática ``no solo\dots\ sino'' no se trata como negación, y tampoco ``no metales'', que es un término químico y no una negación.
+
+Cuando un concepto aparece negado, no se acredita: pasa a una categoría específica y no suma a \texttt{concept\_ratio}. El efecto sobre el ejemplo anterior es inmediato: la respuesta falsa baja de 9{,}8 a aproximadamente 0{,}3, mientras que una respuesta que niega legítimamente \emph{otra} cosa (``a diferencia del cloroplasto, que no hace la respiración, la mitocondria sí produce ATP\dots'') mantiene su nota alta. El alcance de la negación se limita a la cláusula para no propagarse a frases vecinas.
+
+El procedimiento puede resumirse en el siguiente pseudocódigo, donde se aprecia que el alcance de la negación se restringe a la cláusula en la que aparece el concepto:
+
+\begin{lstlisting}[style=pycode]
+para cada concepto de la rúbrica:
+    si el concepto (o un sinónimo) aparece en la respuesta:
+        cláusula = cláusula que contiene el concepto
+        si hay un negador antes del concepto en esa cláusula
+           y no es una excepción ("no solo", "no metales"):
+            marcar concepto como NEGADO   # no suma a la nota
+        si no:
+            marcar concepto como DETECTADO
+\end{lstlisting}
+
+Este mecanismo es determinista y, por tanto, plenamente trazable: el sistema puede informar de qué conceptos se han considerado negados. Lo que no alcanza a detectar de forma fiable es la atribución errónea sin negación local —``la respiración celular es cosa del cloroplasto''—, donde los términos se afirman pero se asignan al objeto equivocado. Ese caso se cubre con el verificador descrito en la sección~\ref{sec:verificador}.
+
+\section{Reconocimiento de paráfrasis: sinónimos por concepto}
+\label{sec:sinonimos}
+
+La principal limitación de un corrector basado en términos literales es que infravalora las paráfrasis: el alumno describe el concepto sin nombrarlo. En las pruebas se observó, por ejemplo, que la respuesta ``una estructura donde el último que metes es el primero que sacas'' —una descripción correcta de una pila LIFO— recibía una nota próxima a cero porque no contenía la sigla ``LIFO'', y la similitud por bolsa de palabras tampoco la rescataba al usar un vocabulario distinto.
+
+Para atacar este problema se añadió la posibilidad de declarar \emph{sinónimos por concepto}: paráfrasis que el profesor acepta como equivalentes al término. Cada concepto de la rúbrica puede llevar una lista opcional de sinónimos, y el concepto se acredita si aparece el término exacto, un sinónimo como subcadena, o \emph{todos} los tokens de contenido de un sinónimo (descartando palabras vacías) con tolerancia morfológica, usando el mismo umbral de similitud entre cadenas que el resto del grader. Esa tolerancia permite emparejar variaciones como ``metes''$\approx$``meter'' o ``sacas''$\approx$``sacar''.
+
+El diseño tiene dos propiedades importantes. Es \textbf{aditivo}: un concepto que no declara sinónimos se comporta exactamente igual que antes, de modo que la batería de validación previa no se ve afectada. Y \textbf{respeta la negación}: un sinónimo negado (``aprende sin ningún dato ni etiqueta'') no acredita el concepto, gracias a un análisis de polaridad análogo al de la sección~\ref{sec:polaridad} adaptado al emparejamiento difuso. La funcionalidad se expone también en la interfaz, de modo que un profesor puede declarar sus propios sinónimos sin tocar el código.
+
+\section{Verificación de factualidad como segunda opinión}
+\label{sec:verificador}
+
+El análisis de polaridad cubre la negación explícita, pero no la atribución errónea. Para ese tipo de error, y en general para detectar contradicciones que un sistema léxico no ve, se añadió una capa opcional de verificación apoyada en un modelo de lenguaje (\texttt{verifier.py}). Su filosofía es deliberadamente conservadora y coherente con el resto del sistema: el verificador \textbf{no reescribe la nota}. Recibe la pregunta, la respuesta ideal, los conceptos clave y la respuesta del alumno, y devuelve una clasificación de cada concepto —correcto, negado, atribución errónea o ausente— junto con un indicador de si la respuesta contiene una contradicción.
+
+Con esa información, el sistema marca el caso como ``revisar'' cuando el grader determinista ha acreditado conceptos que el verificador considera negados o mal atribuidos. La decisión final la mantiene el profesor; el sistema solo levanta una señal y explica por qué. Sobre el ejemplo de la atribución al cloroplasto, el grader determinista daba 9{,}9 pero el verificador marca los tres conceptos como atribución errónea y activa la revisión. La llamada al modelo se realiza con temperatura cero para favorecer la reproducibilidad, y si el servicio no está disponible el sistema degrada con elegancia al modo puramente determinista.
+
+\section{Preguntas no conceptuales: enrutado por tipo}
+
+No todas las preguntas se evalúan bien con un comparador de conceptos. Un examen real mezcla definiciones, problemas de cálculo y ejercicios de redacción, y cada tipo exige un criterio distinto. Por eso el sistema incorpora un enrutado que dirige cada pregunta al corrector adecuado.
+
+Para las preguntas de cálculo de Matemáticas y Física se implementó un corrector específico (\texttt{answer\_checker.py}) que no mide presencia de conceptos, sino corrección del resultado. En Matemáticas se extrae la respuesta final del alumno y se compara con la solución por equivalencia simbólica mediante SymPy, de modo que ``$x=-3$'', ``$x=-6/2$'' y ``$x=-3{,}0$'' se consideran iguales y, lo más importante, una conclusión errónea se detecta aunque aparezcan los símbolos correctos. En Física se comparan valor y unidad, admitiendo una tolerancia relativa para los redondeos y normalizando las unidades. Este componente es igualmente interpretable —se ve qué se ha extraído y por qué— y no usa modelo de lenguaje.
+
+Para las preguntas de redacción (Lengua, Lengua extranjera) la corrección no es determinista, y se delega en un juez basado en un modelo de lenguaje con una rúbrica por criterios. Este enrutado permite delimitar con claridad el alcance: el corrector semántico se reserva para lo conceptual, que es donde su comportamiento es sólido y explicable.
+
+\section{Corrección por lotes y extracción estructurada}
+
+Más allá de la corrección de una respuesta aislada, el sistema contempla escenarios más próximos al uso real. La corrección por lotes permite evaluar de una vez muchas respuestas a una misma pregunta, lo que da sentido a la herramienta en un grupo numeroso. Sobre el conjunto corregido se calculan estadísticas agregadas —distribución de notas, aprobados y suspensos— y se identifica qué conceptos han faltado con más frecuencia en la clase, una información útil para el docente porque señala dónde ha fallado la comprensión colectiva y no solo la de un alumno.
+
+El catálogo de materias ofrece preguntas conceptuales precargadas de varias asignaturas, de modo que el profesor puede partir de una rúbrica ya definida en lugar de construirla desde cero. Y para los exámenes cuya estructura va más allá de un par pregunta--respuesta —tablas, formularios, ejercicios con huecos que rellenar—, el sistema incorpora una extracción estructurada apoyada en un modelo de visión, que reconoce la disposición del documento y clasifica cada celda como texto impreso, respuesta del alumno o casilla vacía. En ese flujo, el modelo se utiliza únicamente para \emph{extraer} la estructura; la corrección posterior la realiza el grader determinista celda a celda, de modo que la decisión sobre la nota sigue siendo trazable.
+
+\section{Calibración a la escala del corrector}
+\label{sec:calibracion}
+
+La validación con datos reales (capítulo~\ref{cap:resultados}) puso de manifiesto que el grader puede ordenar bien las respuestas y, sin embargo, hacerlo en una escala más severa que la de un corrector humano concreto. Como ese desfase es sobre todo de escala, se añadió una capa de calibración determinista (\texttt{calibration.py}). A partir de un conjunto de pares (nota del grader, nota del profesor), aprende un mapeo monótono entre ambas escalas. Se ofrecen dos variantes: una calibración lineal, interpretable mediante una pendiente y un sesgo, y una calibración isotónica por el algoritmo PAVA, monótona pero no paramétrica, que al ser monótona no altera el orden de las respuestas —y por tanto no cambia la correlación de Spearman— y minimiza el error cuadrático bajo esa restricción.
+
+La propiedad de monotonía es la clave: la calibración no inventa orden, solo ajusta la escala al criterio del profesor. Es determinista e interpretable, y complementa a la calibración basada en un modelo de lenguaje con ejemplos, que también se ofrece en la interfaz. Conviene subrayar un matiz importante: la calibración reproduce fielmente el nivel de exigencia de quien la alimenta; si las notas de ejemplo son generosas, la calibración también lo será.
+
+\section{Aplicación web de demostración}
+
+Para mostrar el sistema de forma integrada se desarrolló una aplicación web con \texttt{FastAPI} en el \emph{backend} y un \emph{frontend} estático en HTML, CSS y JavaScript sin marcos, con gráficos mediante una biblioteca ligera cargada por CDN. La aplicación organiza la funcionalidad en pestañas: corrección individual y por lotes, un catálogo de materias con preguntas precargadas, procesamiento de imagen (OCR clásico y extracción estructurada), un ``aula del profesor'' con el asistente de rúbricas, la calibración con ejemplos —determinista y con modelo de lenguaje— y la gestión de sinónimos y antipatrones, y, por último, una pestaña de validación que reproduce la batería de prueba y la concordancia con notas humanas mediante gráficos.
+
+La tabla~\ref{tab:endpoints} resume los principales \emph{endpoints} de la API y si requieren o no un modelo de lenguaje.
+
+\begin{table}[ht]
+\centering
+\caption{Principales \emph{endpoints} de la API y su dependencia de un modelo de lenguaje (LLM).}
+\label{tab:endpoints}
+\small
+\begin{tabularx}{\textwidth}{>{\ttfamily}l >{\raggedright\arraybackslash}X c}
+\toprule
+\normalfont Endpoint & Función & LLM \\
+\midrule
+/api/grade & Corrige una respuesta contra una rúbrica & No \\
+/api/grade\_batch & Corrige un lote de respuestas & No \\
+/api/validate & Ejecuta la batería de 40 casos & No \\
+/api/correlation & Concordancia (Spearman/MAE) con notas de referencia & No \\
+/api/calibrate\_deterministic & Calibración determinista (lineal/isotónica) & No \\
+/api/grade\_numeric & Corrige resultado numérico (Mates/Física) & No \\
+/api/verify\_answer & Verifica factualidad como segunda opinión & Sí \\
+/api/calibrate\_grade & Calibración con ejemplos (few-shot) & Sí \\
+/api/grade\_writing & Juez de redacción con rúbrica por criterios & Sí \\
+/api/ocr & Extrae texto de una imagen & No \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+El \emph{backend} expone una API documentada con endpoints para corregir, validar, calibrar, verificar y procesar imágenes. Las funciones que dependen de un modelo de lenguaje requieren una clave de servicio y, en su ausencia, devuelven un error controlado en lugar de interrumpir la aplicación; el resto funciona de forma totalmente local. Esta separación refuerza la idea central del proyecto: el sistema es útil y explicable sin depender de un servicio externo, que solo aporta funciones acotadas y opcionales.
+
+\subsection{Capturas de la aplicación}
+
+A modo de ilustración se muestran a continuación las funciones principales de la aplicación; el resto de pantallas (página de inicio, aula del profesor y calibración con ejemplos) se recoge en el anexo~\ref{anx:capturas}. La figura~\ref{fig:web-corregir} muestra la corrección de una respuesta: a la izquierda, la referencia con sus conceptos clave ponderados; abajo, la nota obtenida, las señales que la componen (cobertura conceptual, similitud y factor de longitud) y la comparación entre la respuesta ideal y la del alumno, con los conceptos resaltados según se hayan detectado, aparezcan de forma parcial o falten.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.92\textwidth]{web_corregir.png}
+\caption{Corrección de una respuesta parcial. Se observa la nota (6{,}52), la descomposición en señales y la comparación con la respuesta ideal, con los conceptos detectados, parciales y faltantes diferenciados por color.}
+\label{fig:web-corregir}
+\end{figure}
+
+La figura~\ref{fig:web-validacion} reproduce la pestaña de validación, que ejecuta la batería de 40 casos y muestra el resumen de conformidad, la distribución por asignatura y por tema, y el detalle de cada caso con su nota y su banda esperada.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.92\textwidth]{web_validacion.png}
+\caption{Pestaña de validación: resumen de conformidad, gráficos por asignatura y tema, y detalle de casos.}
+\label{fig:web-validacion}
+\end{figure}
+
+Dentro de la misma pestaña, la herramienta calcula la concordancia con una nota de referencia y la muestra de forma visual. La figura~\ref{fig:web-dispersion} reproduce ese panel: las métricas de correlación y error, un diagrama de dispersión que enfrenta la nota del sistema con la del profesor —con la diagonal de acuerdo perfecto— y el desglose del coeficiente de Spearman por pregunta. Es la versión interactiva de los resultados que se analizan en el capítulo~\ref{cap:resultados}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.92\textwidth]{web_dispersion.png}
+\caption{Panel de concordancia: métricas (Spearman, Pearson, MAE, RMSE), diagrama de dispersión nota del sistema frente a nota de referencia con la diagonal de acuerdo perfecto, y Spearman por pregunta.}
+\label{fig:web-dispersion}
+\end{figure}
+
+\section{Tecnologías y herramientas utilizadas}
+
+El sistema se ha desarrollado en Python por su idoneidad para prototipos que combinan procesamiento de texto, visión por computador e integración de servicios. Las principales tecnologías empleadas son las siguientes:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Tesseract} (a través de \texttt{pytesseract}) como motor de reconocimiento óptico de caracteres, y \texttt{OpenCV} y \texttt{Pillow} para las operaciones de imagen.
+  \item \textbf{SymPy} para la comparación por equivalencia simbólica en el corrector numérico de Matemáticas y Física.
+  \item \textbf{FastAPI} y \texttt{uvicorn} para el \emph{backend} web, con un \emph{frontend} estático en HTML, CSS y JavaScript sin marcos.
+  \item Un \textbf{modelo de lenguaje} de la familia Claude, accedido mediante su SDK oficial, para las funciones opcionales de generación de referencia, verificación de factualidad y juez de redacción, siempre con temperatura cero para favorecer la reproducibilidad.
+  \item \textbf{pytest} como marco de pruebas, y \texttt{git} para el control de versiones.
+\end{itemize}
+
+Una decisión transversal ha sido evitar dependencias pesadas en el núcleo de evaluación. Las métricas de concordancia (Spearman, Pearson, error medio) y la calibración isotónica se han implementado directamente, sin recurrir a bibliotecas de cálculo científico de gran tamaño. Esto mantiene el sistema ligero, facilita su despliegue y es coherente con el principio de interpretabilidad: cada cálculo que interviene en la nota es inspeccionable.
+
+\section{Metodología de desarrollo y validación continua}
+
+El desarrollo siguió un enfoque iterativo guiado por las pruebas. Cada vez que se detectaba un comportamiento incorrecto —una respuesta falsa con nota alta, una paráfrasis infravalorada, un desfase frente a notas humanas— se añadía un caso de prueba que lo capturaba, se modificaba el sistema y se comprobaba que la batería completa seguía pasando. Este ciclo evitó que la corrección de un problema introdujera regresiones en otro, algo especialmente importante en un módulo, el de evaluación, donde un cambio en una heurística puede tener efectos sutiles en muchos casos a la vez.
+
+El proyecto cuenta con una batería de pruebas automáticas que supera las doscientas comprobaciones, entre pruebas unitarias de cada componente —detección de polaridad, sinónimos, métricas, calibración, corrector numérico— y pruebas de integración de los \emph{endpoints} de la API. A ello se suma la batería de validación de 40 casos, que actúa como prueba de aceptación del corrector. Esta red de seguridad fue la que permitió, por ejemplo, detectar de inmediato que el análisis de polaridad introducía un falso positivo en una respuesta de bases de datos, antes de que ese efecto se propagara.
+
+\section{Decisiones de diseño y justificación técnica}
+
+Conviene cerrar el capítulo subrayando que muchas de estas decisiones no surgieron de una planificación previa, sino de problemas observados durante el desarrollo. El preprocesamiento de imagen se moderó tras comprobar que un umbral agresivo deformaba caracteres y hacía desaparecer términos clave. El peso de la similitud global se redujo al ver que los errores de OCR penalizaban respuestas válidas. Se introdujo el suelo mínimo al detectar respuestas correctas que quedaban cerca del suspenso por una baja similitud textual. Se pasó de una lista plana de palabras a conceptos ponderados al comprobar que no todos los términos aportan el mismo valor. Y se añadieron la polaridad, los sinónimos, el verificador y la calibración en respuesta directa a fallos concretos: respuestas que negaban lo correcto, paráfrasis infravaloradas, atribuciones erróneas y desfases de escala frente a un corrector humano. El diseño final responde, por tanto, a limitaciones reales y no a una formulación abstracta previa.

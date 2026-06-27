@@ -1,0 +1,71 @@
+\chapter{Introducción y objetivos}
+
+\section{Introducción}
+
+La corrección de preguntas abiertas sigue siendo una de las tareas más costosas dentro de la evaluación académica. A diferencia de los test cerrados, este tipo de ejercicios exige interpretar texto libre, valorar si el contenido responde realmente a lo planteado y, en muchos casos, distinguir entre respuestas incompletas, parcialmente correctas o conceptualmente erróneas. Cuando además la respuesta del alumno se entrega en formato manuscrito o escaneado, el problema incorpora una etapa previa de extracción de información que condiciona todo el proceso posterior.
+
+Este trabajo aborda el diseño y desarrollo de un sistema automático de corrección de preguntas abiertas a partir de imágenes de exámenes. El objetivo no es resolver únicamente la lectura óptica de caracteres ni limitarse a una comparación superficial entre cadenas de texto, sino construir un flujo de evaluación completo capaz de transformar una imagen de entrada en una calificación razonada acompañada de retroalimentación. Para ello se plantea una arquitectura en \emph{pipeline} en la que cada fase cumple una función específica: preprocesamiento de imagen, OCR, identificación de la pregunta y la respuesta, generación de una respuesta ideal de referencia, evaluación semántica y producción de una nota final.
+
+La parte central del sistema reside en la evaluación semántica. En un contexto de respuesta abierta, comparar únicamente palabras o expresiones literales resulta insuficiente, ya que dos alumnos pueden expresar una misma idea con distinta redacción, diferente orden sintáctico o niveles desiguales de detalle. Por ese motivo, la solución propuesta combina varios criterios: detección de conceptos clave ponderados, medida de similitud global del texto y penalización por longitud cuando la respuesta se desvía de forma significativa respecto a lo esperable. Esta combinación permite obtener una valoración más equilibrada que la que se lograría con un enfoque basado solo en coincidencias exactas.
+
+Este trabajo no implementa un modelo de aprendizaje automático entrenado sobre datos, sino un sistema de evaluación diseñado mediante reglas y heurísticas semánticas. Esa decisión es intencionada: en un contexto evaluativo, poder explicar por qué una respuesta ha recibido una determinada nota es tan importante como la nota misma. Aun así, el sistema incorpora elementos propios de la inteligencia artificial, como la interpretación del lenguaje mediante conceptos clave, la aproximación a la evaluación humana y, en una capa opcional y claramente acotada, el uso de un modelo de lenguaje como segunda opinión. Por ello puede clasificarse como un sistema automático híbrido, con un núcleo basado en reglas y componentes opcionales de inteligencia artificial.
+
+El sistema desarrollado tiene un enfoque aplicado y realista. No pretende sustituir completamente la corrección humana en cualquier escenario, sino ofrecer una base técnica útil para automatizar parte del proceso en contextos acotados, especialmente cuando las preguntas pertenecen a dominios bien definidos y existe una estructura mínima en los criterios de evaluación. Desde esa perspectiva, el trabajo se sitúa entre la visión experimental y la implementación de una herramienta práctica de apoyo a la docencia.
+
+Conviene señalar desde el principio que la versión aquí descrita es el resultado de varias iteraciones. El proyecto partió de un \emph{pipeline} de OCR y evaluación por conceptos, y fue creciendo a medida que las pruebas revelaban comportamientos no deseados. Buena parte de lo que en una primera memoria figuraba como ``trabajo futuro'' —reconocer paráfrasis, detectar respuestas que niegan lo correcto, validar contra notas humanas reales o medir la correlación con un corrector— se ha terminado implementando y se documenta aquí ya como resultado, no como propósito.
+
+\section{Motivación}
+
+La motivación principal de este trabajo surge de una necesidad muy concreta: reducir el tiempo invertido en la corrección manual de preguntas abiertas sin perder completamente la capacidad de valorar el contenido de la respuesta. En entornos educativos con grupos numerosos, la revisión de exámenes con desarrollo corto o medio supone una carga relevante para el profesorado, especialmente cuando se busca mantener criterios homogéneos entre distintos alumnos.
+
+En la práctica, muchas soluciones de corrección automática se han centrado históricamente en preguntas tipo test o en ejercicios con respuesta muy estructurada. Sin embargo, las preguntas abiertas siguen teniendo un papel importante porque permiten comprobar comprensión, capacidad de síntesis y uso adecuado de conceptos. Precisamente por eso son valiosas desde el punto de vista docente, aunque también resulten más difíciles de automatizar.
+
+Otro factor que refuerza la relevancia del proyecto es que, en numerosos contextos, las respuestas no se reciben como texto digital nativo, sino como imágenes generadas a partir de escaneos, fotografías o documentos exportados desde plataformas de examen. Esto añade una dificultad adicional: antes de evaluar la calidad de la respuesta es necesario extraerla de forma razonablemente fiable. Por tanto, el problema no puede abordarse solo desde el procesamiento del lenguaje natural, sino como una integración entre visión por computador, OCR y análisis semántico.
+
+Además del interés académico, el proyecto tiene valor desde una perspectiva de ingeniería. Obliga a conectar varios módulos heterogéneos, a tomar decisiones sobre cómo representar el conocimiento relevante de una pregunta y a definir una métrica de evaluación interpretable. En lugar de confiar en una única puntuación opaca, se ha buscado que el sistema pueda justificar el resultado mediante criterios comprensibles, como la presencia de conceptos esperados o el grado de proximidad global entre la respuesta del alumno y una respuesta modelo.
+
+\section{Objetivo general}
+
+El objetivo general del trabajo es desarrollar un sistema automático capaz de corregir preguntas abiertas a partir de imágenes de exámenes, generando una nota y una retroalimentación básica de forma coherente con unos criterios de evaluación predefinidos, y hacerlo de manera que el resultado sea interpretable y defendible ante un corrector humano.
+
+\section{Objetivos específicos}
+
+Para alcanzar ese objetivo general se plantean los siguientes objetivos específicos:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item Diseñar una arquitectura modular que separe claramente las fases de adquisición, extracción y evaluación.
+  \item Estudiar el pretratamiento de imagen previo al OCR y evaluar empíricamente su impacto real sobre la calidad de la extracción.
+  \item Integrar Tesseract como motor de reconocimiento óptico de caracteres para convertir la imagen en texto procesable.
+  \item Identificar dentro del texto extraído los fragmentos correspondientes a la pregunta y a la respuesta.
+  \item Generar una respuesta ideal o de referencia que actúe como base para la comparación posterior.
+  \item Definir un mecanismo de evaluación semántica que combine conceptos clave ponderados, similitud global y control de longitud.
+  \item Dotar al sistema de robustez frente a dos fallos típicos de la corrección por palabras clave: las respuestas que niegan lo correcto y las que reutilizan el vocabulario del tema sin comprenderlo.
+  \item Reconocer paráfrasis válidas mediante sinónimos asociados a cada concepto, sin renunciar a la interpretabilidad.
+  \item Validar el sistema de forma cuantitativa, midiendo su concordancia con notas humanas tanto de referencia como reales, mediante correlación de Spearman y error medio.
+  \item Analizar las limitaciones reales del sistema y proponer mejoras viables para futuras iteraciones.
+\end{itemize}
+
+\section{Alcance del proyecto}
+
+El alcance del sistema se ha acotado deliberadamente para mantener una relación razonable entre complejidad y viabilidad. La propuesta se orienta a preguntas abiertas de extensión limitada o media, pertenecientes a dominios donde sea posible definir conceptos relevantes con cierta claridad. No se ha planteado como una solución universal para cualquier disciplina, ni como un sustituto completo del criterio docente.
+
+Tampoco se persigue resolver todos los problemas asociados al reconocimiento de escritura manuscrita compleja o a imágenes de baja calidad extrema. El foco del trabajo está en demostrar que, bajo unas condiciones de entrada razonables, es posible construir un \emph{pipeline} completo de corrección automática que produzca resultados útiles y defendibles. Esta delimitación permite centrar el esfuerzo en la lógica del sistema y, en particular, en el diseño de la evaluación semántica.
+
+Conviene precisar también qué tipos de pregunta entran en el alcance del módulo principal. El corrector semántico está pensado para preguntas conceptuales: definiciones, explicaciones y enunciados teóricos en los que la respuesta correcta se puede describir mediante un conjunto de ideas clave. Las preguntas de cálculo numérico y las de redacción libre (comentario de texto, expresión en lengua extranjera) quedan fuera de ese módulo y se atienden, cuando procede, con componentes específicos que se describen más adelante. Reconocer esa frontera es parte del trabajo: un sistema honesto debe saber qué preguntas puede juzgar bien y cuáles conviene derivar a otro mecanismo.
+
+\section{Principales contribuciones}
+
+Aunque el objetivo general es construir un sistema funcional, conviene destacar las aportaciones concretas que diferencian este trabajo de un simple ensamblaje de herramientas:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item Un corrector semántico determinista e interpretable que combina conceptos clave ponderados, similitud global y control de longitud, con una fórmula de nota cuyo orden de operaciones está justificado.
+  \item Un análisis de polaridad que evita el fallo más grave de la corrección por palabras clave —puntuar alto una respuesta que niega lo correcto— manteniendo la trazabilidad.
+  \item Un mecanismo de sinónimos por concepto que reconoce paráfrasis sin perder interpretabilidad y sin alterar el comportamiento previo del sistema.
+  \item Una capa de verificación opcional que detecta atribuciones erróneas como segunda opinión, sin reescribir la nota.
+  \item Una capa de calibración determinista que ajusta la escala del sistema a la de un corrector concreto, validada sobre datos no vistos.
+  \item Una validación cuantitativa amplia: una batería determinista, un banco de exámenes de cinco niveles educativos y una prueba con notas de profesores humanos reales, con resultados expresados mediante correlación de Spearman y error medio.
+\end{itemize}
+
+\section{Estructura de la memoria}
+
+El resto del documento se organiza como sigue. El capítulo~\ref{cap:estado} revisa el estado del arte en corrección automática de respuestas abiertas, OCR en documentos académicos y evaluación semántica, y justifica el enfoque adoptado. El capítulo~\ref{cap:metodologia} describe la metodología y el desarrollo: la arquitectura del \emph{pipeline}, cada uno de sus módulos y las mejoras incorporadas (polaridad, sinónimos, verificador y calibración), así como la aplicación web construida para la demostración. El capítulo~\ref{cap:resultados} recoge la validación experimental, desde la batería determinista hasta la validación con datos reales y la recalibración. El capítulo~\ref{cap:consideraciones} aborda las consideraciones éticas, legales y de sostenibilidad del sistema. El capítulo~\ref{cap:conclusiones} resume las conclusiones y las líneas de trabajo futuro. Finalmente se incluyen los anexos y las referencias.

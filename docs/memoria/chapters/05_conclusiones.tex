@@ -1,0 +1,30 @@
+\chapter{Conclusiones y trabajo futuro}
+\label{cap:conclusiones}
+
+\section{Conclusiones}
+
+Este trabajo ha permitido desarrollar un sistema automático de corrección de preguntas abiertas a partir de imágenes de exámenes, abordando el problema como un \emph{pipeline} completo y no como una suma aislada de técnicas. La propuesta integra procesamiento de imagen, OCR, parseo estructural, generación de referencia, evaluación semántica y producción de \emph{feedback}, y se ha enriquecido con varios mecanismos que responden a limitaciones observadas durante las pruebas.
+
+La principal aportación se encuentra en la estrategia de evaluación semántica. En lugar de reducir la corrección a una coincidencia de palabras, se ha planteado un mecanismo mixto que valora conceptos clave ponderados, proximidad global y adecuación de la extensión, y que se ha mantenido deliberadamente determinista e interpretable. Sobre esa base se han añadido cuatro mejoras que, en conjunto, transforman un comparador de conceptos ingenuo en un corrector razonablemente robusto: el análisis de polaridad, que impide acreditar conceptos negados; los sinónimos por concepto, que reconocen paráfrasis sin perder trazabilidad; el verificador de factualidad, que marca atribuciones erróneas como segunda opinión sin reescribir la nota; y la capa de calibración, que ajusta la escala del sistema al criterio de cada corrector.
+
+La validación respalda estas decisiones con números. En su escenario de diseño —preguntas conceptuales con rúbrica curada—, el sistema concuerda con la nota de referencia con una correlación de Spearman cercana a $0{,}93$ y un error medio inferior a un punto sobre diez, de forma estable desde Primaria hasta Máster. Frente a respuestas adversarias, la polaridad y el verificador evitan los dos fallos clásicos de la corrección por palabras clave. Y la prueba con datos reales de Mohler, lejos de maquillarse, se ha utilizado para mostrar abiertamente el peor caso del sistema y para demostrar que su error es fundamentalmente de escala, corregible mediante calibración.
+
+Otra conclusión relevante, ya presente en la primera versión del proyecto y confirmada después, es que la calidad del OCR condiciona de forma determinante el comportamiento global: la capacidad del módulo semántico no compensa por completo una extracción textual deficiente, por lo que la robustez debe entenderse como una propiedad del \emph{pipeline} entero. En la misma línea, el trabajo ha mostrado que ciertas intuiciones habituales —como que un preprocesamiento de imagen más agresivo siempre mejora la lectura— no se sostienen al contrastarlas empíricamente.
+
+En conjunto, el sistema no sustituye el criterio docente, pero sí ofrece una herramienta con potencial para reducir carga de trabajo, homogeneizar criterios básicos y servir de apoyo en la evaluación, siempre que se reconozcan sus límites. En definitiva, un corrector automático útil no es el que afirma ser perfecto, sino el que explica por qué califica como califica y dónde necesita ayuda.
+
+\section{Lecciones aprendidas}
+
+Más allá del resultado técnico, el desarrollo dejó algunas lecciones que conviene recoger. La primera es que las intuiciones deben contrastarse: la creencia de que un preprocesamiento de imagen más agresivo mejora siempre el OCR resultó falsa en este caso, y solo las pruebas lo revelaron. La segunda es el valor de una batería de pruebas como red de seguridad; en un módulo donde un cambio en una heurística puede alterar muchos casos a la vez, poder comprobar de inmediato que no se ha roto nada fue lo que permitió iterar con confianza. La tercera, quizá la más importante, es que un sistema de evaluación gana más siendo honesto sobre sus límites que aparentando una precisión que no tiene: convertir la prueba con datos reales —donde el sistema rendía peor— en un análisis del porqué resultó más valioso que ocultarla.
+
+También se aprendió a apreciar el coste de cada decisión. Añadir el análisis de polaridad mejoró la robustez pero introdujo falsos positivos que hubo que cazar uno a uno; los sinónimos recuperaron las paráfrasis pero obligaron a cuidar que no se acreditara un concepto negado. Cada mejora trajo su propio matiz, y aceptarlo —en lugar de buscar una solución perfecta y cerrada— fue parte de hacer que el sistema funcionara de verdad.
+
+\section{Trabajo futuro}
+
+El desarrollo realizado abre varias líneas de mejora. La más evidente es reforzar el módulo OCR, especialmente para escritura manuscrita, mediante mejores estrategias de detección de regiones, corrección de inclinación o la incorporación de motores más especializados cuando el tipo de documento lo justifique.
+
+En el plano semántico, sería interesante enriquecer la detección de conceptos con representaciones distribuidas del lenguaje, que permitirían reconocer paráfrasis sin necesidad de declararlas explícitamente como sinónimos, siempre que se preserve un grado suficiente de interpretabilidad. El análisis de polaridad podría extenderse para cubrir construcciones más complejas y, sobre todo, la atribución errónea sin negación local, que hoy se delega en el verificador basado en un modelo de lenguaje.
+
+Una línea de validación importante es repetir la medida de concordancia con correcciones de profesores reales en español, idealmente de varios correctores sobre las mismas respuestas, lo que permitiría además estimar la concordancia entre humanos y situar en ese marco la del sistema. La disponibilidad de ese tipo de datos es hoy la principal barrera, ya que los exámenes oficiales públicos en español rara vez incluyen respuestas de alumnos calificadas.
+
+Finalmente, desde el punto de vista de producto, la aplicación web podría evolucionar hacia un cuaderno del profesor más completo, con gestión de grupos y exámenes, exportación de resultados y un flujo de calibración guiado que aproveche las notas que el docente ya introduce en su práctica habitual. Estas mejoras no alteran el núcleo del sistema, sino que amplían su utilidad práctica manteniendo la interpretabilidad como principio de diseño.

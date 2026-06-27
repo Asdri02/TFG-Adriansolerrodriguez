@@ -9,9 +9,10 @@ It is **not** a machine-learning system. It is a hybrid pipeline that combines:
 
 1. OCR (Tesseract via `pytesseract`) on the input image
 2. Question/answer parsing
-3. Reference-answer generation (currently a controlled mock; a Claude-backed
-   cached generator exists in `src/reference_db.py` but is not wired into the
-   main pipeline yet)
+3. Reference-answer generation: a controlled mock (`MockReferenceGenerator`)
+   for offline tests, plus a Claude-backed cached generator in
+   `src/reference_db.py` wired into the web pipeline via the
+   `/api/generate_reference` endpoint
 4. Semantic grading: weighted key-concept detection + **polarity check
    (negation/contradiction)** + global cosine similarity + length penalty +
    minimum-floor rule
@@ -121,7 +122,7 @@ Y abrir `http://127.0.0.1:8000`.
 ### Pestañas
 
 - **Corregir** — sub-modos:
-  - *Individual*: selector con los 35 casos pre-calibrados o modo
+  - *Individual*: selector con los 40 casos pre-calibrados o modo
     personalizado. En custom hay también `+ Términos bonus` (vocabulario
     técnico aditivo, p.ej. Filosofía). Resultado con score animado, comparativa
     ideal vs alumno con resaltado, métricas y botón **"Explicar nota con IA"**
@@ -228,10 +229,10 @@ Planned for the next memory revision session. Do not touch the code for these.
 
 ## Improvements to consider after the incoherences are fixed
 
-- **Wire `reference_db.py` into the pipeline.** It already calls Claude,
-  validates the JSON, and caches to `data/reference_cache.json`. Replace the
-  `MockReferenceGenerator` in `test_full_pipeline.py` with a path that uses
-  `get_reference(question)`. Keep the mock available for offline tests.
+- ✅ **`reference_db.py` wired into the web pipeline** (`/api/generate_reference`):
+  calls Claude, validates the JSON, and caches to `data/reference_cache.json`.
+  Pending only: replace the `MockReferenceGenerator` in `test_full_pipeline.py`
+  with a path that uses `get_reference(question)`, keeping the mock for offline tests.
 - ✅ **Expanded `validate.py`** to 40 cases across two subjects (Biología,
   Informática) incl. 5 de negación/polaridad, with per-topic and per-subject
   accuracy breakdown. Future: añadir Física o Química para llegar a 3–4
