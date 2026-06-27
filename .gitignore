@@ -25,3 +25,6 @@ data/*.db
 Thumbs.db
 # Datos externos de terceros (no se versionan; se descargan con el script)
 experiments/external/
+
+# PDF de trabajo de la memoria (el oficial es TFG_Adrián_Soler_Rodríguez.pdf)
+docs/memoria/main.pdf
