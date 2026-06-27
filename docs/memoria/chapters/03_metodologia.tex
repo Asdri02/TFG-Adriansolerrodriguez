@@ -99,7 +99,7 @@ A la vista de ese comportamiento, la decisión de diseño fue prescindir del pre
 
 \section{Módulo OCR}
 
-El reconocimiento óptico de caracteres se resuelve mediante Tesseract, integrado a través de la biblioteca \texttt{pytesseract}. La elección se debe a varios factores: es una solución consolidada, suficientemente flexible para prototipos avanzados y compatible con un flujo de procesamiento personalizado, y permite trabajar sin entrenar desde cero un modelo específico.
+El reconocimiento óptico de caracteres se resuelve mediante Tesseract \parencite{smith2007}, integrado a través de la biblioteca \texttt{pytesseract}. La elección se debe a varios factores: es una solución consolidada, suficientemente flexible para prototipos avanzados y compatible con un flujo de procesamiento personalizado, y permite trabajar sin entrenar desde cero un modelo específico.
 
 El OCR transforma una imagen en una representación textual sobre la que ya pueden aplicarse técnicas de análisis. Esta conversión es un punto crítico porque cualquier error se propaga al resto del \emph{pipeline}: si una palabra clave aparece deformada, puede dejar de detectarse; si la segmentación del texto falla, la separación entre pregunta y respuesta también puede verse afectada. Por ese motivo, la evaluación del OCR no debe hacerse solo en términos de precisión de caracteres, sino atendiendo a su impacto funcional, es decir, a si el texto extraído conserva suficiente información para permitir una evaluación razonable.
 
